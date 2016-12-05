@@ -1,10 +1,20 @@
 package com.colornaut.colornaut;
 
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.util.Log;
 import android.view.Surface;
@@ -48,6 +58,20 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public boolean isSafeToTakePicture() { return safeToTakePicture; }
     public void setSafeToTakePicture(Boolean safe) {safeToTakePicture = safe;}
 
+    public void onPreviewFrame(byte[] data, Camera camera)
+    {
+        // Convert to JPG
+        Camera.Size previewSize = camera.getParameters().getPreviewSize();
+        YuvImage yuvimage=new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
+        byte[] jdata = baos.toByteArray();
+
+// Convert to Bitmap
+        Bitmap bmp = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
+        Log.i(TAG, bmp.toString());
+    }
+
     public void surfaceCreated(SurfaceHolder holder) {
         try {
             mCamera.setPreviewDisplay(mHolder);
@@ -58,7 +82,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        mCamera.stopPreview();
+//        mCamera.stopPreview();
         mCamera.release();
     }
 
