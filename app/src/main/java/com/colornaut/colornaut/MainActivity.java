@@ -10,12 +10,17 @@ import java.util.Date;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -27,18 +32,28 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 import android.support.v7.app.AppCompatActivity;
 
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
+
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
+import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
+
+@SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
 
     private final static String TAG = "COLORNAUT";
 
     private Camera mCamera;
-    private CameraPreview mPreview;
-    private PictureCallback mPicture;
-    private Button capture, switchCamera;
+    private CameraPreview mCameraPreview;
+    private Button capture;
     private Context myContext;
-    private LinearLayout cameraPreview;
-    private boolean cameraFront = false;
     private FrameLayout mLayoutPreview;
+    PictureCallback mCall;
+
+    //a bitmap to display the captured image
+    private Bitmap bmp;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -47,17 +62,30 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         myContext = this;
 
-        mCamera = Camera.open();
+        mCamera = getCameraInstance();
 
         mLayoutPreview = (FrameLayout) findViewById(R.id.camera_preview);
-        mPreview = new CameraPreview(this, mCamera);
+        mCameraPreview = new CameraPreview(this, mCamera);
 
-        mLayoutPreview.addView(mPreview, 0);
+        mLayoutPreview.addView(mCameraPreview, 0);
 
         capture = (Button) findViewById(R.id.button_capture);
-        capture.setOnClickListener(captrureListener);
+        capture.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                captureImage();
+            }
+        });
+    }
 
-
+    private Camera getCameraInstance() {
+        Camera camera = null;
+        try {
+            camera = Camera.open();
+        } catch (Exception e) {
+            // cannot get camera or does not exist
+        }
+        return camera;
     }
 
     public void onResume() {
@@ -75,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //            mCamera = Camera.open(findBackFacingCamera());
 //            mPicture = getPictureCallback();
-//            mPreview.refreshCamera(mCamera);
+//            mCameraPreview.refreshCamera(mCamera);
 //        }
     }
 
@@ -86,61 +114,50 @@ public class MainActivity extends AppCompatActivity {
         releaseCamera();
     }
 
-    private PictureCallback getPictureCallback() {
-        PictureCallback picture = new PictureCallback() {
-
-            @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-                //make a new picture file
-                File pictureFile = getOutputMediaFile();
-
-                if (pictureFile == null) {
-                    return;
-                }
-                try {
-                    //write the file
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-                    fos.write(data);
-                    fos.close();
-                    Toast toast = Toast.makeText(myContext, "Picture saved: " + pictureFile.getName(), Toast.LENGTH_LONG);
-                    toast.show();
-
-                } catch (FileNotFoundException e) {
-                } catch (IOException e) {
-                }
-
-                //refresh camera to continue preview
-                //mPreview.refreshCamera(mCamera);
-            }
-        };
-        return picture;
+    private void captureImage() {
+        //sets what code should be executed after the picture is taken
+        if (mCameraPreview.isSafeToTakePicture()) {
+            mCamera.takePicture(null, null, mPicture);
+            mCameraPreview.setSafeToTakePicture(false);
+        }
+        //Log.i(TAG, "captured image: " + bmp);
     }
 
-    OnClickListener captrureListener = new OnClickListener() {
+    PictureCallback mPicture = new PictureCallback() {
         @Override
-        public void onClick(View v) {
-            mCamera.takePicture(null, null, mPicture);
+        public void onPictureTaken(byte[] data, Camera camera) {
+            File pictureFile = getOutputMediaFile();
+            if (pictureFile == null) {
+                mCameraPreview.setSafeToTakePicture(true);
+                return;
+            }
+            try {
+                FileOutputStream fos = new FileOutputStream(pictureFile);
+                fos.write(data);
+                fos.close();
+                mCameraPreview.setSafeToTakePicture(true);
+            } catch (FileNotFoundException e) {
+
+            } catch (IOException e) {
+            }
         }
     };
 
-    //make picture and save to a folder
-    private static File getOutputMediaFile() {
-        //make a new file directory inside the "sdcard" folder
-        File mediaStorageDir = new File("/sdcard/", "JCG Camera");
 
-        //if this "JCGCamera folder does not exist
+    private static File getOutputMediaFile() {
+        File mediaStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyCameraApp");
         if (!mediaStorageDir.exists()) {
-            //if you cannot make this folder return
             if (!mediaStorageDir.mkdirs()) {
+                Log.d("MyCameraApp", "failed to create directory");
                 return null;
             }
         }
-
-        //take the current timeStamp
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        // Create a media file name
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss")
+                .format(new Date());
         File mediaFile;
-        //and make a media file:
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator + "IMG_" + timeStamp + ".jpg");
+        mediaFile = new File(mediaStorageDir.getPath() + File.separator
+                + "IMG_" + timeStamp + ".jpg");
 
         return mediaFile;
     }
@@ -152,6 +169,5 @@ public class MainActivity extends AppCompatActivity {
             mCamera = null;
         }
     }
-
 
 }

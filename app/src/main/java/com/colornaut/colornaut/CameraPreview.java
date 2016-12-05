@@ -25,6 +25,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     public List<Camera.Size> mSupportedPreviewSizes;
     private Camera.Size mPreviewSize;
 
+    private boolean safeToTakePicture = false;
+
     public CameraPreview(Context context, Camera camera) {
         super(context);
         mContext = context;
@@ -43,12 +45,21 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
 
+    public boolean isSafeToTakePicture() { return safeToTakePicture; }
+    public void setSafeToTakePicture(Boolean safe) {safeToTakePicture = safe;}
+
     public void surfaceCreated(SurfaceHolder holder) {
-        // empty. surfaceChanged will take care of stuff
+        try {
+            mCamera.setPreviewDisplay(mHolder);
+            mCamera.startPreview();
+        } catch (IOException e) {
+            // left blank for now
+        }
     }
 
     public void surfaceDestroyed(SurfaceHolder holder) {
-        // empty. Take care of releasing the Camera preview in your activity.
+        mCamera.stopPreview();
+        mCamera.release();
     }
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
@@ -77,6 +88,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
             mCamera.setPreviewDisplay(mHolder);
             setCameraDisplayOrientation();
             mCamera.startPreview();
+            safeToTakePicture = true;
 
         } catch (Exception e){
             Log.d(TAG, "Error starting camera preview: " + e.getMessage());
