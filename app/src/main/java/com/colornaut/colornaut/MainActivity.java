@@ -27,18 +27,7 @@ import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
 import android.support.v7.app.AppCompatActivity;
-
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.appindexing.Thing;
-import com.google.android.gms.common.api.GoogleApiClient;
-
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_IMAGE;
-import static android.provider.MediaStore.Files.FileColumns.MEDIA_TYPE_VIDEO;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
