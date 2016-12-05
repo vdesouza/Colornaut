@@ -60,41 +60,6 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
-    private int findFrontFacingCamera() {
-        int cameraId = -1;
-        // Search for the front facing camera
-        int numberOfCameras = Camera.getNumberOfCameras();
-        for (int i = 0; i < numberOfCameras; i++) {
-            CameraInfo info = new CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if (info.facing == CameraInfo.CAMERA_FACING_FRONT) {
-                cameraId = i;
-                cameraFront = true;
-                break;
-            }
-        }
-        return cameraId;
-    }
-
-    private int findBackFacingCamera() {
-        int cameraId = -1;
-        //Search for the back facing camera
-        //get the number of cameras
-        int numberOfCameras = Camera.getNumberOfCameras();
-        //for every camera check
-        for (int i = 0; i < numberOfCameras; i++) {
-            CameraInfo info = new CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if (info.facing == CameraInfo.CAMERA_FACING_BACK) {
-                cameraId = i;
-                cameraFront = false;
-                break;
-            }
-        }
-        return cameraId;
-    }
-
     public void onResume() {
         super.onResume();
 //        if (!hasCamera(myContext)) {
@@ -119,15 +84,6 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         //when on Pause, release camera in order to be used from other applications
         releaseCamera();
-    }
-
-    private boolean hasCamera(Context context) {
-        //check if the device has camera
-        if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     private PictureCallback getPictureCallback() {
