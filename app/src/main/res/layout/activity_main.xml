@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              android:layout_width="fill_parent"
-              android:layout_height="fill_parent"
-              android:orientation="horizontal" >
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="horizontal"
+    android:id="@+id/main_activity">
+
+    <!--main view of camera preview and buttons-->
 
     <FrameLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
@@ -11,35 +14,49 @@
         android:id="@+id/camera_preview">
 
         <LinearLayout
-            android:id="@+id/linearLayout1"
+            android:id="@+id/linear_layout_camera_buttons"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
             <Button
                 android:id="@+id/button_capture"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Capture"
                 android:layout_marginTop="100dp"/>
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/camera_image"/>
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/color1"/>
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/color2"/>
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/color3"/>
-            <ImageView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:id="@+id/color4"/>
+
         </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/edit_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#00ffffff"
+            android:orientation="vertical">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="#ffffff">
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="Slide Down"
+                    android:onClick="slideDown"/>
+
+            </RelativeLayout>
+
+        </LinearLayout>
+
+
     </FrameLayout>
+
 </RelativeLayout>

@@ -33,6 +33,7 @@ public class ColorPalette {
         this.image = image;
         Palette.Builder paletteBuilder = Palette.from(image);
         paletteBuilder.generate(new Palette.PaletteAsyncListener() {
+            @Override
             public void onGenerated(Palette palette) {
                 mPalette = palette;
             }
