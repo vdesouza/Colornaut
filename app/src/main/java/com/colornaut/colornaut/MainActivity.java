@@ -1,82 +1,81 @@
 package com.colornaut.colornaut;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import android.app.Activity;
+import java.io.ByteArrayOutputStream;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.graphics.Point;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.Display;
+import android.support.v7.app.ActionBar;
+import android.support.v7.graphics.Palette;
+import android.support.v7.widget.LinearLayoutCompat;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 
+
+@SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
 
     private final static String TAG = "COLORNAUT";
 
     private Camera mCamera;
-    private CameraPreview mPreview;
-    private PictureCallback mPicture;
-    private Button capture, switchCamera;
-    private Context myContext;
-    private LinearLayout cameraPreview;
-    private boolean cameraFront = false;
+    private CameraPreview mCameraPreview;
+    private Button mCaptureButton;
+    private Context mContext;
     private FrameLayout mLayoutPreview;
+
+    //bitmap to display the captured image
+    private Bitmap mBitmapTaken;
+    LinearLayout linearLayout;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        myContext = this;
+        mContext = this;
 
-        mCamera = Camera.open();
+        // get camera if available
+        mCamera = getCameraInstance();
 
+        // set up layout and camera view
         mLayoutPreview = (FrameLayout) findViewById(R.id.camera_preview);
-        mPreview = new CameraPreview(this, mCamera);
+        mCameraPreview = new CameraPreview(this, mCamera);
+        mLayoutPreview.addView(mCameraPreview, 0);
 
-        mLayoutPreview.addView(mPreview, 0);
+        // set up capture button
+        mCaptureButton = (Button) findViewById(R.id.button_capture);
+        mCaptureButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                captureImage();
+            }
+        });
 
-        capture = (Button) findViewById(R.id.button_capture);
-        capture.setOnClickListener(captrureListener);
+        // Linear layout for testing images
+        //LinearLayOut Setup
+        linearLayout= new LinearLayout(this);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
 
-
+        linearLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
+    @Override
     public void onResume() {
         super.onResume();
-//        if (!hasCamera(myContext)) {
-//            Toast toast = Toast.makeText(myContext, "Sorry, your phone does not have a camera!", Toast.LENGTH_LONG);
-//            toast.show();
-//            finish();
-//        }
-//        if (mCamera == null) {
-//            //if the front facing camera does not exist
-//            if (findFrontFacingCamera() < 0) {
-//                Toast.makeText(this, "No front facing camera found.", Toast.LENGTH_LONG).show();
-//                switchCamera.setVisibility(View.GONE);
-//            }
-//            mCamera = Camera.open(findBackFacingCamera());
-//            mPicture = getPictureCallback();
-//            mPreview.refreshCamera(mCamera);
-//        }
     }
 
     @Override
@@ -86,63 +85,44 @@ public class MainActivity extends AppCompatActivity {
         releaseCamera();
     }
 
-    private PictureCallback getPictureCallback() {
-        PictureCallback picture = new PictureCallback() {
-
-            @Override
-            public void onPictureTaken(byte[] data, Camera camera) {
-                //make a new picture file
-                File pictureFile = getOutputMediaFile();
-
-                if (pictureFile == null) {
-                    return;
-                }
-                try {
-                    //write the file
-                    FileOutputStream fos = new FileOutputStream(pictureFile);
-                    fos.write(data);
-                    fos.close();
-                    Toast toast = Toast.makeText(myContext, "Picture saved: " + pictureFile.getName(), Toast.LENGTH_LONG);
-                    toast.show();
-
-                } catch (FileNotFoundException e) {
-                } catch (IOException e) {
-                }
-
-                //refresh camera to continue preview
-                //mPreview.refreshCamera(mCamera);
-            }
-        };
-        return picture;
+    private Camera getCameraInstance() {
+        Camera camera = null;
+        try {
+            camera = Camera.open();
+        } catch (Exception e) {
+            Log.i(TAG, "Could not get camera: " + e.getMessage());
+        }
+        return camera;
     }
 
-    OnClickListener captrureListener = new OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            mCamera.takePicture(null, null, mPicture);
-        }
-    };
-
-    //make picture and save to a folder
-    private static File getOutputMediaFile() {
-        //make a new file directory inside the "sdcard" folder
-        File mediaStorageDir = new File("/sdcard/", "JCG Camera");
-
-        //if this "JCGCamera folder does not exist
-        if (!mediaStorageDir.exists()) {
-            //if you cannot make this folder return
-            if (!mediaStorageDir.mkdirs()) {
-                return null;
+    private void captureImage() {
+        // takes the preview on screen and puts it in a bitmap
+        mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
+            @Override
+            public void onPreviewFrame(byte[] data, Camera camera) {
+                // Convert to JPG - found at http://stackoverflow.com/a/7536405
+                Camera.Size previewSize = camera.getParameters().getPreviewSize();
+                YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
+                byte[] jdata = baos.toByteArray();
+                // Convert to Bitmap
+                mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
+                Log.i(TAG, mBitmapTaken.toString());
+                Palette.Builder paletteBuilder = Palette.from(mBitmapTaken);
+                paletteBuilder.generate(new Palette.PaletteAsyncListener() {
+                    public void onGenerated(Palette palette) {
+                        for (Palette.Swatch ps : palette.getSwatches()) {
+                            ImageView imageView = new ImageView(getApplicationContext());
+                            imageView.setBackgroundColor(ps.getRgb());
+                            Log.i(TAG, ps.toString());
+                            imageView.setLayoutParams(new LinearLayout.LayoutParams(330, 40));
+                            linearLayout.addView(imageView);
+                        }
+                    }
+                });
             }
-        }
-
-        //take the current timeStamp
-        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-        File mediaFile;
-        //and make a media file:
-        mediaFile = new File(mediaStorageDir.getPath() + File.separator + "IMG_" + timeStamp + ".jpg");
-
-        return mediaFile;
+        });
     }
 
     private void releaseCamera() {
@@ -153,5 +133,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    Palette.PaletteAsyncListener paletteListener = new Palette.PaletteAsyncListener() {
+        public void onGenerated(Palette palette) {
+            // access palette colors here
+            if (mBitmapTaken != null && !mBitmapTaken.isRecycled()) {
+                Palette.from(mBitmapTaken).generate(paletteListener);
+            }
+        }
+    };
 
 }
