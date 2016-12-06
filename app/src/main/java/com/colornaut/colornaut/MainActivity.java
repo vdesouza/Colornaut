@@ -7,6 +7,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
@@ -63,8 +64,10 @@ public class MainActivity extends AppCompatActivity {
 
         // set up layout and camera view
         mLayoutPreview = (FrameLayout) findViewById(R.id.camera_preview);
-        mCameraPreview = new CameraPreview(this, mCamera);
-        mLayoutPreview.addView(mCameraPreview, 0);
+        if (mCamera != null) {
+            mCameraPreview = new CameraPreview(this, mCamera);
+            mLayoutPreview.addView(mCameraPreview, 0);
+        }
 
         editPanel = (ViewGroup) findViewById(R.id.edit_panel);
         editPanel.setVisibility(View.INVISIBLE);
@@ -116,15 +119,21 @@ public class MainActivity extends AppCompatActivity {
         mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                // Convert to JPG - found at http://stackoverflow.com/a/7536405
-                Camera.Size previewSize = camera.getParameters().getPreviewSize();
-                YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
-                byte[] jdata = baos.toByteArray();
-                // Convert to Bitmap
-                mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
-                Log.i(TAG, mBitmapTaken.toString());
+                if (camera != null) {
+                    // Convert to JPG - found at http://stackoverflow.com/a/7536405
+                    Camera.Size previewSize = camera.getParameters().getPreviewSize();
+                    YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
+                    byte[] jdata = baos.toByteArray();
+                    // Convert to Bitmap
+                    mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
+                    Log.i(TAG, mBitmapTaken.toString());
+                } else {
+                    Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
+                    mBitmapTaken = Bitmap.createBitmap(100, 100, conf);
+                    mBitmapTaken.eraseColor(Color.BLUE);
+                }
 
                 //TODO - Make ColorPalette object here
 
