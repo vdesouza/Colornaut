@@ -10,6 +10,9 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
+import android.support.v7.graphics.Palette;
+import android.support.v7.widget.LinearLayoutCompat;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -17,6 +20,9 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 
 @SuppressWarnings("deprecation")
@@ -32,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     //bitmap to display the captured image
     private Bitmap mBitmapTaken;
+    LinearLayout linearLayout;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -56,6 +63,14 @@ public class MainActivity extends AppCompatActivity {
                 captureImage();
             }
         });
+
+        // Linear layout for testing images
+        //LinearLayOut Setup
+        linearLayout= new LinearLayout(this);
+        linearLayout.setOrientation(LinearLayout.VERTICAL);
+
+        linearLayout.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT));
     }
 
     @Override
@@ -94,6 +109,18 @@ public class MainActivity extends AppCompatActivity {
                 // Convert to Bitmap
                 mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
                 Log.i(TAG, mBitmapTaken.toString());
+                Palette.Builder paletteBuilder = Palette.from(mBitmapTaken);
+                paletteBuilder.generate(new Palette.PaletteAsyncListener() {
+                    public void onGenerated(Palette palette) {
+                        for (Palette.Swatch ps : palette.getSwatches()) {
+                            ImageView imageView = new ImageView(getApplicationContext());
+                            imageView.setBackgroundColor(ps.getRgb());
+                            Log.i(TAG, ps.toString());
+                            imageView.setLayoutParams(new LinearLayout.LayoutParams(330, 40));
+                            linearLayout.addView(imageView);
+                        }
+                    }
+                });
             }
         });
     }
@@ -105,5 +132,14 @@ public class MainActivity extends AppCompatActivity {
             mCamera = null;
         }
     }
+
+    Palette.PaletteAsyncListener paletteListener = new Palette.PaletteAsyncListener() {
+        public void onGenerated(Palette palette) {
+            // access palette colors here
+            if (mBitmapTaken != null && !mBitmapTaken.isRecycled()) {
+                Palette.from(mBitmapTaken).generate(paletteListener);
+            }
+        }
+    };
 
 }

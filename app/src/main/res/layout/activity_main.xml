@@ -24,6 +24,22 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:id="@+id/camera_image"/>
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/color1"/>
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/color2"/>
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/color3"/>
+            <ImageView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:id="@+id/color4"/>
         </LinearLayout>
     </FrameLayout>
 </RelativeLayout>
