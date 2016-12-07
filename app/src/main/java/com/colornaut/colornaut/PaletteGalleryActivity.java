@@ -116,6 +116,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             paletteText5.setText(swatches.get(5).toString());
             paletteText6.setText(swatches.get(6).toString());
             paletteText7.setText(swatches.get(7).toString());
+
             return relativeLayout;
         }
     }
