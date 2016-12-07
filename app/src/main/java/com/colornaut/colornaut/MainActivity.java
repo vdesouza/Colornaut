@@ -21,6 +21,7 @@ import java.util.Set;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -70,6 +71,7 @@ public class MainActivity extends AppCompatActivity {
     private Camera mCamera;
     private CameraPreview mCameraPreview;
     private Button mCaptureButton;
+    private Button mPaletteGalleryButton;
     private Context mContext;
     private FrameLayout mLayoutPreview;
 
@@ -116,6 +118,18 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 captureImage();
+            }
+        });
+
+        // set up palette gallery button
+        mPaletteGalleryButton = (Button) findViewById(R.id.button_palette_gallery);
+        mPaletteGalleryButton.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
+                intent.putExtra("list", load());
+                startActivity(intent);
             }
         });
 
