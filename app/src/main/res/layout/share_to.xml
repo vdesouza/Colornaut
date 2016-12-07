@@ -1,0 +1,56 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:gravity="center"
+    android:layout_gravity="center"
+    android:layout_height="wrap_content">
+
+    <TextView
+        android:text="Share to:"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/share_to_desc"
+        android:layout_weight="1"
+        android:textSize="20sp" />
+
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:layout_height="50dp">
+
+        <ImageButton
+            android:id="@+id/fb_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@drawable/fb" />
+
+        <ImageButton
+            android:id="@+id/twitter_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@drawable/twitter" />
+
+        <ImageButton
+            android:id="@+id/instagram_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@drawable/instagram" />
+
+        <ImageButton
+            android:id="@+id/pinterest_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@drawable/pinterest" />
+
+        <ImageButton
+            android:id="@+id/save_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:src="@drawable/save" />
+
+    </LinearLayout>
+
+
+</LinearLayout>
