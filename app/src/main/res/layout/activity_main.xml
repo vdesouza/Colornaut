@@ -20,6 +20,12 @@
             android:orientation="vertical">
 
             <Button
+                android:text="Share"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/buttonShare" />
+
+            <Button
                 android:text="Saved Palettes"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
