@@ -86,8 +86,6 @@
                     android:gravity="center"
                     android:layout_below="@id/paletteNameEditText"/>
 
-
-
             </RelativeLayout>
 
         </LinearLayout>

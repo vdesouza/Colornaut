@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void launchEditPanel() {
-        if (!isPanelShown) {
+      //  if (!isPanelShown) {
             Log.i(TAG, "Launching edit");
             Animation bottomUp = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up);
             editPanel.startAnimation(bottomUp);
@@ -167,7 +167,7 @@ public class MainActivity extends AppCompatActivity {
 //            inputPaletteName.setHint("Enter palette name");
 //            RelativeLayout editPanelRelativeLayout = (RelativeLayout) findViewById(R.id.editPanelRelativeLayout);
 //            editPanelRelativeLayout.addView(inputPaletteName);
-        }
+        //}
     }
 
     private void closeEditPanel() {
