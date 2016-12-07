@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.support.v7.app.ActionBar;
 import android.support.v7.graphics.Palette;
 import android.support.v7.widget.LinearLayoutCompat;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -24,9 +25,12 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -47,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
 
     //bitmap to display the captured image
     private Bitmap mBitmapTaken;
+    private ColorPalette colorPalette;
 
     // views for edit panel
     private ViewGroup editPanel;
@@ -119,39 +124,27 @@ public class MainActivity extends AppCompatActivity {
         mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                if (camera != null) {
-                    // Convert to JPG - found at http://stackoverflow.com/a/7536405
-                    Camera.Size previewSize = camera.getParameters().getPreviewSize();
-                    YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                    yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
-                    byte[] jdata = baos.toByteArray();
-                    // Convert to Bitmap
-                    mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
-                    Log.i(TAG, mBitmapTaken.toString());
-                } else {
-                    Bitmap.Config conf = Bitmap.Config.ARGB_8888; // see other conf types
-                    mBitmapTaken = Bitmap.createBitmap(100, 100, conf);
-                    mBitmapTaken.eraseColor(Color.BLUE);
-                }
+                // Convert to JPG - found at http://stackoverflow.com/a/7536405
+                Camera.Size previewSize = camera.getParameters().getPreviewSize();
+                YuvImage yuvimage = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                yuvimage.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, baos);
+                byte[] jdata = baos.toByteArray();
+                // Convert to Bitmap
+                mBitmapTaken = BitmapFactory.decodeByteArray(jdata, 0, jdata.length);
+                Log.i(TAG, mBitmapTaken.toString());
 
-                //TODO - Make ColorPalette object here
+                // create color palette
+                colorPalette = new ColorPalette(mBitmapTaken);
 
-                Palette.Builder paletteBuilder = Palette.from(mBitmapTaken);
-                paletteBuilder.generate(new Palette.PaletteAsyncListener() {
-                    public void onGenerated(Palette palette) {
-                        // picture taken and pallet created
-                        launchEditPanel();
-                    }
-                });
-
-
+                // open edit panel
+                launchEditPanel();
             }
         });
     }
 
     public void slideDown(View v) {
-        launchEditPanel();
+        closeEditPanel();
     }
 
     private void launchEditPanel() {
@@ -163,7 +156,22 @@ public class MainActivity extends AppCompatActivity {
             editPanel.bringToFront();
             Log.i(TAG, "Launched edit");
             isPanelShown = true;
-        } else {
+
+            // build gridview of palette colors
+            GridView mPaletteGridView = (GridView) findViewById(R.id.paletteGridView);
+            mPaletteGridView.setAdapter(new ColorPreviewsGridAdapter(this, colorPalette.getSwatchesRgb()));
+
+//            // Set an EditText view to get user input
+//            final EditText inputPaletteName = new EditText(mContext);
+//            inputPaletteName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+//            inputPaletteName.setHint("Enter palette name");
+//            RelativeLayout editPanelRelativeLayout = (RelativeLayout) findViewById(R.id.editPanelRelativeLayout);
+//            editPanelRelativeLayout.addView(inputPaletteName);
+        }
+    }
+
+    private void closeEditPanel() {
+        if (isPanelShown) {
             Log.i(TAG, "Closing edit");
             Animation bottomDown = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_down);
             editPanel.startAnimation(bottomDown);
@@ -171,7 +179,6 @@ public class MainActivity extends AppCompatActivity {
             Log.i(TAG, "Closed edit");
             isPanelShown = false;
         }
-
     }
 
 

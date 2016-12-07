@@ -2,6 +2,7 @@ package com.colornaut.colornaut;
 
 import android.graphics.Bitmap;
 import android.support.v7.graphics.Palette;
+import android.util.Log;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,20 +32,22 @@ public class ColorPalette {
 
     public ColorPalette(Bitmap image) {
         this.image = image;
-        Palette.Builder paletteBuilder = Palette.from(image);
-        paletteBuilder.generate(new Palette.PaletteAsyncListener() {
-            @Override
-            public void onGenerated(Palette palette) {
-                mPalette = palette;
-            }
-        });
+        mPalette = Palette.from(image).generate();
         this.paletteSwatches = mPalette.getSwatches();
-        for (int i = 0; i <= paletteSwatches.size(); i++) {
+        for (int i = 0; i <= paletteSwatches.size() - 1; i++) {
             this.rgbValues.add(i, paletteSwatches.get(i).getRgb());
+            Log.i(TAG,i + " : " + rgbValues.get(i).toString());
         }
     }
 
     public List<Palette.Swatch> getPaletteSwatches() { return paletteSwatches; }
+    public ArrayList<Integer> getSwatchesRgb() {
+        ArrayList<Integer> list = new ArrayList<>();
+        for (Palette.Swatch ps : paletteSwatches) {
+            list.add(ps.getRgb());
+        }
+        return list;
+    }
     public ArrayList<Integer> getRgbValues() { return rgbValues; }
     public Integer getRgbValue(int position) { return rgbValues.get(position); }
     public ArrayList<String> getHexValuess() { return hexValues; }

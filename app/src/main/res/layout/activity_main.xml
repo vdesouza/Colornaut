@@ -41,6 +41,7 @@
                 android:layout_weight="1"/>
 
             <RelativeLayout
+                android:id="@+id/editPanelRelativeLayout"
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_weight="1"
@@ -48,9 +49,44 @@
 
                 <Button
                     android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:text="Slide Down"
-                    android:onClick="slideDown"/>
+                    android:layout_height="wrap_content"
+                    android:id="@+id/slideDownButton"
+                    android:text="Cancel"
+                    android:onClick="slideDown"
+                    android:gravity="top"/>
+
+                <!-- GridView that holds palette preview -->
+                <GridView
+                    android:id="@+id/paletteGridView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_margin="2dp"
+                    android:numColumns="auto_fit"
+                    android:columnWidth="70dp"
+                    android:verticalSpacing="2dp"
+                    android:horizontalSpacing="2dp"
+                    android:gravity="center"
+                    android:layout_below="@id/slideDownButton"/>
+
+                <EditText
+                    android:id="@+id/paletteNameEditText"
+                    android:layout_width="fill_parent"
+                    android:layout_height="100dp"
+                    android:inputType="text"
+                    android:hint="Enter palette name"
+                    android:layout_below="@id/paletteGridView"/>
+
+                <Button
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentBottom="true"
+                    android:id="@+id/saveButton"
+                    android:text="Save"
+                    android:onClick="slideDown"
+                    android:gravity="center"
+                    android:layout_below="@id/paletteNameEditText"/>
+
+
 
             </RelativeLayout>
 
