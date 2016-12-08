@@ -19,6 +19,10 @@ import java.util.ArrayList;
  * Created by vdesouza on 12/7/16.
  */
 
+// Async task for loading from file and saving to file.
+// The goal was to have this multithread approach to save palettes but could not get it to work right.
+// Might work for loading adapter for listview of saved palettes though.
+
 public class ColornautDataAsyncTask extends AsyncTask<Void, Void, Void> {
 
     private final static String TAG = "COLORNAUT";
