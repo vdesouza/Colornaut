@@ -1,8 +1,11 @@
 package com.colornaut.colornaut;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.graphics.Palette;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,8 +15,13 @@ import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class PaletteGalleryActivity extends AppCompatActivity {
     // Views for this class
@@ -22,17 +30,28 @@ public class PaletteGalleryActivity extends AppCompatActivity {
     // views/variables for palette gallery
     PGListAdapter listAdapter;
 
+    private final static String TAG = "COLORNAUT:gallery";
+    private static final String PREFS_KEY = "ColornautData";
+    private SharedPreferences prefs;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_palette_gallery);
         mContext = getApplicationContext();
 
-        ArrayList<ColorPalette> list = (ArrayList<ColorPalette>) getIntent().getSerializableExtra("palette");
+        Log.i(TAG, "loading");
+
+        ArrayList<ColorPalette> list = load();
+
+        Log.i(TAG, "loaded");
+
+        prefs = this.getSharedPreferences("pref", Context.MODE_PRIVATE);
+
 
         // Sets listview for palette gallery
         ListView listView = (ListView) findViewById(R.id.listView);
-        listAdapter = new PGListAdapter(mContext, null);
+        listAdapter = new PGListAdapter(mContext, list);
         listView.setAdapter(listAdapter);
 
         for (ColorPalette p : list) {
@@ -76,8 +95,11 @@ public class PaletteGalleryActivity extends AppCompatActivity {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
+
+            Log.i(TAG, "Testing adapter");
+
             ColorPalette colorPalette = paletteList.get(i);
-            ArrayList<Integer> swatches = colorPalette.getSwatchesRgb();
+           // ArrayList<Integer> swatches = colorPalette.getSwatchesRgb();
 
             RelativeLayout relativeLayout = (RelativeLayout) LayoutInflater.from(mContext).inflate(R.layout.palette_list_items, viewGroup, false);
 
@@ -99,25 +121,111 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             TextView paletteText6 = (TextView) relativeLayout.findViewById(R.id.paletteText6);
             TextView paletteText7 = (TextView) relativeLayout.findViewById(R.id.paletteText7);
 
-            nameTextView.setText(colorPalette.getPaletteName());
-            locationTextView.setText(colorPalette.getLocation());
-            originalImageView.setImageBitmap(colorPalette.getImage());
-            paletteView1.setBackgroundColor(swatches.get(1));
-            paletteView2.setBackgroundColor(swatches.get(2));
-            paletteView3.setBackgroundColor(swatches.get(3));
-            paletteView4.setBackgroundColor(swatches.get(4));
-            paletteView5.setBackgroundColor(swatches.get(5));
-            paletteView6.setBackgroundColor(swatches.get(6));
-            paletteView7.setBackgroundColor(swatches.get(7));
-            paletteText1.setText(swatches.get(1).toString());
-            paletteText2.setText(swatches.get(2).toString());
-            paletteText3.setText(swatches.get(3).toString());
-            paletteText4.setText(swatches.get(4).toString());
-            paletteText5.setText(swatches.get(5).toString());
-            paletteText6.setText(swatches.get(6).toString());
-            paletteText7.setText(swatches.get(7).toString());
+//            nameTextView.setText(colorPalette.getPaletteName());
+//            locationTextView.setText(colorPalette.getLocation());
+//            originalImageView.setImageBitmap(colorPalette.getImage());
+//            paletteView1.setBackgroundColor(swatches.get(1));
+//            paletteView2.setBackgroundColor(swatches.get(2));
+//            paletteView3.setBackgroundColor(swatches.get(3));
+//            paletteView4.setBackgroundColor(swatches.get(4));
+//            paletteView5.setBackgroundColor(swatches.get(5));
+//            paletteView6.setBackgroundColor(swatches.get(6));
+//            paletteView7.setBackgroundColor(swatches.get(7));
+//            paletteText1.setText(swatches.get(1).toString());
+//            paletteText2.setText(swatches.get(2).toString());
+//            paletteText3.setText(swatches.get(3).toString());
+//            paletteText4.setText(swatches.get(4).toString());
+//            paletteText5.setText(swatches.get(5).toString());
+//            paletteText6.setText(swatches.get(6).toString());
+//            paletteText7.setText(swatches.get(7).toString());
 
             return relativeLayout;
         }
+    }
+
+
+    private ArrayList<ColorPalette> load() {
+        ArrayList<ColorPalette> listOfSavedPalettes = new ArrayList<ColorPalette>();
+
+        BufferedReader reader = null;
+        try {
+
+            Set<String> paletteSet = prefs.getStringSet(PREFS_KEY, new HashSet<String>());
+            Log.i(TAG, "here: " + paletteSet);
+            for (String s : paletteSet) {
+                reader = new BufferedReader(new StringReader(s));
+
+                Log.i(TAG, "String: " + s);
+
+                String name;
+                //String bitmap;
+                String location;
+                String color;
+                String population;
+                String empty = "";
+
+                while (null != (name = reader.readLine())) {
+                    //bitmap = reader.readLine();
+                    location = reader.readLine();
+                    Log.i(TAG, "Loading: Name = "+name);
+                    Log.i(TAG, "Loading: Location = "+location);
+                    List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
+                    while (!empty.equals(color = reader.readLine())) {
+                        if (color.equals("swatches:")) {
+                            color = reader.readLine();
+                        }
+                        Log.i(TAG, "Loading: Color = "+color);
+                        population = reader.readLine();
+                        Log.i(TAG, "Loading: Population = "+population);
+                        if (!color.equals("") && !population.equals("")) {
+                            Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
+                            swatchList.add(ps);
+                        }
+                    }
+                    //ColorPalette cp = new ColorPalette(name, location, swatchList);
+                    //listOfSavedPalettes.add(cp);
+                }
+
+            }
+//            FileInputStream fis = openFileInput(FILE_NAME);
+//            reader = new BufferedReader(new InputStreamReader(fis));
+//
+//            String name;
+//            String bitmap;
+//            String location;
+//            String color;
+//            String population;
+//            String empty = "";
+//
+//            while (null != (name = reader.readLine())) {
+//                bitmap = reader.readLine();
+//                location = reader.readLine();
+//                Log.i(TAG, "Loading: Name = "+name);
+//                Log.i(TAG, "Loading: Location = "+location);
+//                List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
+//                while (!empty.equals(reader.readLine())) {
+//                    color = reader.readLine();
+//                    Log.i(TAG, "Loading: Color = "+color);
+//                    population = reader.readLine();
+//                    Log.i(TAG, "Loading: Population = "+population);
+//                    Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
+//                    swatchList.add(ps);
+//                }
+//                ColorPalette cp = new ColorPalette(name, bitmap, location, swatchList);
+//                listOfSavedPalettes.add(cp);
+//            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (null != reader) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
+        return listOfSavedPalettes;
     }
 }

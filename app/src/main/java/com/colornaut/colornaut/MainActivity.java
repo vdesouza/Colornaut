@@ -3,9 +3,14 @@ package com.colornaut.colornaut;
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.io.StreamCorruptedException;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,14 +54,16 @@ import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.google.android.gms.plus.model.people.Person;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
 
     private final static String TAG = "COLORNAUT";
-//    private static final String FILE_NAME = "ColornautData.txt";
-    private static final String PREFS_KEY = "ColornautData";
-    private SharedPreferences prefs;
+    private final static String FILENAME = "ColornautData.srl";
+
+    // the main data structure that holds all saved color palettes taken
+    private ArrayList<ColorPalette> colornautData;
 
     // views for main screen
     private Camera mCamera;
@@ -66,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
     private Context mContext;
     private FrameLayout mLayoutPreview;
     private Button mShareButton;
-    private ShareView shareView;
+    //private ShareView shareView;
 
     //bitmap to display the captured image
     private Bitmap mBitmapTaken;
@@ -87,7 +94,10 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mContext = this;
 
-        prefs = mContext.getSharedPreferences("pref", Context.MODE_PRIVATE);
+        // Load save data from memory
+        if (null == (colornautData = load())) {
+            colornautData = new ArrayList<ColorPalette>();
+        }
 
         // get camera if available
         mCamera = getCameraInstance();
@@ -121,7 +131,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
-                intent.putExtra("list", load());
+                //intent.putExtra("list", load());
                 startActivity(intent);
             }
         });
@@ -130,8 +140,8 @@ public class MainActivity extends AppCompatActivity {
         mShareButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                shareView = new ShareView(mContext, null);
-                mLayoutPreview.addView(shareView);
+               // shareView = new ShareView(mContext, null);
+                //mLayoutPreview.addView(shareView);
             }
         });
 
@@ -205,12 +215,12 @@ public class MainActivity extends AppCompatActivity {
 
         // build gridview of palette colors
         GridView mPaletteGridView = (GridView) findViewById(R.id.paletteGridView);
-        mAdapter = new ColorPreviewsGridAdapter(this, colorPalette.getSwatchesRgb());
+        mAdapter = new ColorPreviewsGridAdapter(this, colorPalette.getAllRgbValues());
         mPaletteGridView.setAdapter(mAdapter);
 
         // Set an EditText view to get user input and Save button
         inputPaletteName = new EditText(mContext);
-        inputPaletteName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        inputPaletteName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         inputPaletteName.setHint("Enter palette name");
         editPanelLinearLayout.addView(inputPaletteName);
 
@@ -219,7 +229,11 @@ public class MainActivity extends AppCompatActivity {
         saveButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                savePalette(colorPalette);
+                if (!inputPaletteName.getText().toString().isEmpty()) {
+                    colorPalette.setPaletteName(inputPaletteName.getText().toString());
+                }
+                colornautData.add(colorPalette);
+                save();
             }
         });
         editPanelLinearLayout.addView(saveButton);
@@ -243,252 +257,178 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void savePalette(ColorPalette colorPalette) {
-
-        Set<String> paletteSet = prefs.getStringSet(PREFS_KEY, new HashSet<String>());
-        SharedPreferences.Editor editor = prefs.edit();
-        paletteSet.add(colorPalette.toString());
-        editor.putStringSet(PREFS_KEY, paletteSet);
-        editor.apply();
-
-        Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
-
-        ArrayList<ColorPalette> loadedlist = load();
-        Log.i(TAG, "Load complete");
-        for (ColorPalette cp : loadedlist) {
-            Log.i(TAG, cp.toString());
+    private void save() {
+        ObjectOutput out = null;
+        try {
+            out = new ObjectOutputStream(new FileOutputStream(new File(getFilesDir(),"")+File.separator+FILENAME));
+            out.writeObject(colornautData);
+            out.close();
+            Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
+        ArrayList<ColorPalette> loadedPalettes = load();
+        Log.i(TAG, "Load complete: " + loadedPalettes.toString() + " Count: " + loadedPalettes.size());
 
-
-//        PrintWriter writer = null;
-//        try {
-//            FileOutputStream fos = openFileOutput(FILE_NAME, MODE_PRIVATE);
-//            writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
-//                    fos)));
-//            Toast.makeText(mContext, "Saving...", Toast.LENGTH_LONG).show();
-//            writer.println(colorPalette);
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//            if (null != writer) {
-//                writer.close();
-//                Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
-//                ArrayList<ColorPalette> loadedlist = load();
-//                Log.i(TAG, "Load complete");
-//                for (ColorPalette cp : loadedlist) {
-//
-//                    Log.i(TAG, cp.toString());
-//                }
-//            }
-//        }
-
+        for (ColorPalette loadedPalette: loadedPalettes) {
+            Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
+            for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
+                ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
+                Log.i(TAG, "Color" + i + ": " + swatch.get(0));
+                Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
+                Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
+                Log.i(TAG, "Population" + i + ": " + swatch.get(3));
+            }
+        }
         closeEditPanel();
     }
 
     private ArrayList<ColorPalette> load() {
-        ArrayList<ColorPalette> listOfSavedPalettes = new ArrayList<ColorPalette>();
-
-        BufferedReader reader = null;
+        ObjectInputStream input;
         try {
-
-            Set<String> paletteSet = prefs.getStringSet(PREFS_KEY, new HashSet<String>());
-
-            for (String s : paletteSet) {
-                reader = new BufferedReader(new StringReader(s));
-
-                Log.i(TAG, "String: " + s);
-
-                String name;
-                //String bitmap;
-                String location;
-                String color;
-                String population;
-                String empty = "";
-
-                while (null != (name = reader.readLine())) {
-                    //bitmap = reader.readLine();
-                    location = reader.readLine();
-                    Log.i(TAG, "Loading: Name = "+name);
-                    Log.i(TAG, "Loading: Location = "+location);
-                    List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
-                    while (!empty.equals(reader.readLine())) {
-                        color = reader.readLine();
-                        Log.i(TAG, "Loading: Color = "+color);
-                        population = reader.readLine();
-                        Log.i(TAG, "Loading: Population = "+population);
-                        Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
-                        swatchList.add(ps);
-                    }
-                    ColorPalette cp = new ColorPalette(name, location, swatchList);
-                    listOfSavedPalettes.add(cp);
-                }
-
-            }
-//            FileInputStream fis = openFileInput(FILE_NAME);
-//            reader = new BufferedReader(new InputStreamReader(fis));
-//
-//            String name;
-//            String bitmap;
-//            String location;
-//            String color;
-//            String population;
-//            String empty = "";
-//
-//            while (null != (name = reader.readLine())) {
-//                bitmap = reader.readLine();
-//                location = reader.readLine();
-//                Log.i(TAG, "Loading: Name = "+name);
-//                Log.i(TAG, "Loading: Location = "+location);
-//                List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
-//                while (!empty.equals(reader.readLine())) {
-//                    color = reader.readLine();
-//                    Log.i(TAG, "Loading: Color = "+color);
-//                    population = reader.readLine();
-//                    Log.i(TAG, "Loading: Population = "+population);
-//                    Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
-//                    swatchList.add(ps);
-//                }
-//                ColorPalette cp = new ColorPalette(name, bitmap, location, swatchList);
-//                listOfSavedPalettes.add(cp);
-//            }
+            input = new ObjectInputStream(new FileInputStream(new File(new File(getFilesDir(),"")+File.separator+FILENAME)));
+            ArrayList<ColorPalette> colorPalettes = (ArrayList<ColorPalette>) input.readObject();
+            input.close();
+            return colorPalettes;
+        } catch (StreamCorruptedException e) {
+            e.printStackTrace();
+            return null;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            return null;
         } catch (IOException e) {
             e.printStackTrace();
-        } finally {
-            if (null != reader) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-            return listOfSavedPalettes;
+            return null;
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
         }
-
     }
 
-    public class ShareView extends View {
-
-        private ColorPalette palette;
-        private Canvas canvas = new Canvas();
-        private Dialog checks, shareTo;
-        private Context context;
-        private Bitmap image;
-
-
-        public ShareView(Context context, ColorPalette palette) {
-            super(context);
-            this.context = context;
-            this.palette = palette;
-
-            checks = new Dialog(context);
-            checks.setContentView(R.layout.select_share);
-            checks.show();
-
-            shareTo = new Dialog(context);
-            shareTo.setContentView(R.layout.share_to);
-
-
-            Button confirm = (Button) checks.findViewById(R.id.share_info);
-            confirm.setOnClickListener(new OnClickListener() {
-                public void onClick(View view) {
-                    checks.dismiss();
-                    ImageButton fb = (ImageButton) shareTo.findViewById(R.id.fb_btn);
-                    fb.setOnClickListener(listener);
-                    ImageButton twit = (ImageButton)shareTo.findViewById(R.id.twitter_btn);
-                    twit.setOnClickListener(listener);
-                    ImageButton ig = (ImageButton)shareTo.findViewById(R.id.instagram_btn);
-                    ig.setOnClickListener(listener);
-                    ImageButton pin = (ImageButton)shareTo.findViewById(R.id.pinterest_btn);
-                    pin.setOnClickListener(listener);
-                    ImageButton sav = (ImageButton)shareTo.findViewById(R.id.save_btn);
-                    sav.setOnClickListener(listener);
-                    shareTo.show();
-                }
-            });
-        }
-
-        protected OnClickListener listener = new OnClickListener() {
-
-            public void onClick(View v) {
-                switch (v.getId()) {
-                    case R.id.fb_btn:
-
-                        break;
-                    case R.id.twitter_btn:
-
-                        break;
-                    case R.id.instagram_btn:
-
-                        break;
-                    case R.id.pinterest_btn:
-
-                        break;
-                    case R.id.save_btn:
-
-                        String fName = UUID.randomUUID().toString() + ".png";
-                        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fName);
-                        try {
-                            boolean compressSucceeded = image.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(file));
-                            addImageToGallery(file.getAbsolutePath(), context);
-                            Toast.makeText(context, "Saved to " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
-                        } catch (FileNotFoundException e) {
-                            e.printStackTrace();
-                        }
-                        break;
-                }
-                shareTo.dismiss();
-                Toast.makeText(context, "Image Shared! :)", Toast.LENGTH_SHORT).show();
-            }
-        };
-
-        public void addImageToGallery(final String filePath, final Context context) {
-
-            ContentValues values = new ContentValues();
-
-            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
-            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-            values.put(MediaStore.MediaColumns.DATA, filePath);
-
-            context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-        }
-
-        public void makeImage() {
-            Paint paint = new Paint();
-            paint.setTextSize(16f);
-            paint.setColor(Color.BLACK);
-            if ( ((CheckBox) checks.findViewById(R.id.img)).isChecked() ) {
-                canvas.drawBitmap(palette.getImage(),00000,000000, null);
-            }
-            if ( ((CheckBox) checks.findViewById(R.id.name)).isChecked() ) {
-                canvas.drawText(palette.getPaletteName(), 0000000, 0000000, paint);
-            }
-            if ( ((CheckBox) checks.findViewById(R.id.rgb)).isChecked() ) {
-                for (Integer rgb : palette.getRgbValues()) {
-                    int r = (rgb >> 16) & 0xff;
-                    int g = (rgb >> 8) & 0xff;
-                    int b = rgb & 0xff;
-
-                    String output = "RGB(" + r + ", " + g + ", " + b + ")";
-                    canvas.drawText(output, 00000, 000000, paint);
-                }
-
-            }
-            if ( ((CheckBox) checks.findViewById(R.id.hex)).isChecked() ) {
-                for (String hex : palette.getHexValuess()) {
-                    canvas.drawText(hex, 00000, 0000, paint);
-                }
-
-            }
-            if ( ((CheckBox) findViewById(R.id.time)).isChecked() ) {
-
-            }
-            if ( ((CheckBox) findViewById(R.id.loc)).isChecked() ) {
-
-            }
-        }
-
-    }
+//    public class ShareView extends View {
+//
+//        private ColorPalette palette;
+//        private Canvas canvas = new Canvas();
+//        private Dialog checks, shareTo;
+//        private Context context;
+//        private Bitmap image;
+//
+//
+//        public ShareView(Context context, ColorPalette palette) {
+//            super(context);
+//            this.context = context;
+//            this.palette = palette;
+//
+//            checks = new Dialog(context);
+//            checks.setContentView(R.layout.select_share);
+//            checks.show();
+//
+//            shareTo = new Dialog(context);
+//            shareTo.setContentView(R.layout.share_to);
+//
+//
+//            Button confirm = (Button) checks.findViewById(R.id.share_info);
+//            confirm.setOnClickListener(new OnClickListener() {
+//                public void onClick(View view) {
+//                    checks.dismiss();
+//                    ImageButton fb = (ImageButton) shareTo.findViewById(R.id.fb_btn);
+//                    fb.setOnClickListener(listener);
+//                    ImageButton twit = (ImageButton)shareTo.findViewById(R.id.twitter_btn);
+//                    twit.setOnClickListener(listener);
+//                    ImageButton ig = (ImageButton)shareTo.findViewById(R.id.instagram_btn);
+//                    ig.setOnClickListener(listener);
+//                    ImageButton pin = (ImageButton)shareTo.findViewById(R.id.pinterest_btn);
+//                    pin.setOnClickListener(listener);
+//                    ImageButton sav = (ImageButton)shareTo.findViewById(R.id.save_btn);
+//                    sav.setOnClickListener(listener);
+//                    shareTo.show();
+//                }
+//            });
+//        }
+//
+//        protected OnClickListener listener = new OnClickListener() {
+//
+//            public void onClick(View v) {
+//                switch (v.getId()) {
+//                    case R.id.fb_btn:
+//
+//                        break;
+//                    case R.id.twitter_btn:
+//
+//                        break;
+//                    case R.id.instagram_btn:
+//
+//                        break;
+//                    case R.id.pinterest_btn:
+//
+//                        break;
+//                    case R.id.save_btn:
+//
+//                        String fName = UUID.randomUUID().toString() + ".png";
+//                        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fName);
+//                        try {
+//                            boolean compressSucceeded = image.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(file));
+//                            addImageToGallery(file.getAbsolutePath(), context);
+//                            Toast.makeText(context, "Saved to " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+//                        } catch (FileNotFoundException e) {
+//                            e.printStackTrace();
+//                        }
+//                        break;
+//                }
+//                shareTo.dismiss();
+//                Toast.makeText(context, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+//            }
+//        };
+//
+//        public void addImageToGallery(final String filePath, final Context context) {
+//
+//            ContentValues values = new ContentValues();
+//
+//            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+//            values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+//            values.put(MediaStore.MediaColumns.DATA, filePath);
+//
+//            context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+//        }
+//
+//        public void makeImage() {
+//            Paint paint = new Paint();
+//            paint.setTextSize(16f);
+//            paint.setColor(Color.BLACK);
+//            if ( ((CheckBox) checks.findViewById(R.id.img)).isChecked() ) {
+//                canvas.drawBitmap(palette.getImage(),00000,000000, null);
+//            }
+//            if ( ((CheckBox) checks.findViewById(R.id.name)).isChecked() ) {
+//                canvas.drawText(palette.getPaletteName(), 0000000, 0000000, paint);
+//            }
+//            if ( ((CheckBox) checks.findViewById(R.id.rgb)).isChecked() ) {
+//                for (Integer rgb : palette.getRgbValues()) {
+//                    int r = (rgb >> 16) & 0xff;
+//                    int g = (rgb >> 8) & 0xff;
+//                    int b = rgb & 0xff;
+//
+//                    String output = "RGB(" + r + ", " + g + ", " + b + ")";
+//                    canvas.drawText(output, 00000, 000000, paint);
+//                }
+//
+//            }
+//            if ( ((CheckBox) checks.findViewById(R.id.hex)).isChecked() ) {
+//                for (String hex : palette.getHexValuess()) {
+//                    canvas.drawText(hex, 00000, 0000, paint);
+//                }
+//
+//            }
+//            if ( ((CheckBox) findViewById(R.id.time)).isChecked() ) {
+//
+//            }
+//            if ( ((CheckBox) findViewById(R.id.loc)).isChecked() ) {
+//
+//            }
+//        }
+//
+//    }
 
 }
