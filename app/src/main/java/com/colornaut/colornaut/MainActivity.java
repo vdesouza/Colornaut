@@ -32,9 +32,12 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.Loader;
 import android.support.v7.graphics.Palette;
 import android.text.InputType;
 import android.util.Log;
@@ -63,7 +66,8 @@ public class MainActivity extends AppCompatActivity {
     private final static String FILENAME = "ColornautData.srl";
 
     // the main data structure that holds all saved color palettes taken
-    private ArrayList<ColorPalette> colornautData;
+    private static ArrayList<ColorPalette> colornautData = new ArrayList<ColorPalette>();
+    private static boolean saved = false;
 
     // views for main screen
     private Camera mCamera;
@@ -87,6 +91,9 @@ public class MainActivity extends AppCompatActivity {
     private ColorPreviewsGridAdapter mAdapter;
     private boolean isPanelShown;
 
+    private ColornautDataAsyncTask saveAsyncTask;
+    private ColornautDataAsyncTask loadAsyncTask;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,10 +101,16 @@ public class MainActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         mContext = this;
 
-        // Load save data from memory
-        if (null == (colornautData = load())) {
-            colornautData = new ArrayList<ColorPalette>();
-        }
+        // Load saved data from memory
+        loadAsyncTask = new ColornautDataAsyncTask(mContext, ColornautDataAsyncTask.MODE_LOAD);
+        loadAsyncTask.execute(colornautData);
+
+
+////        // Load save data from memory --- happens on UI thread
+//        if (null == (colornautData = load())) {
+//            colornautData = new ArrayList<ColorPalette>();
+//            saved = false;
+//        }
 
         // get camera if available
         mCamera = getCameraInstance();
@@ -157,6 +170,9 @@ public class MainActivity extends AppCompatActivity {
         super.onPause();
         //when on Pause, release camera in order to be used from other applications
         releaseCamera();
+        //save();
+        saveAsyncTask = new ColornautDataAsyncTask(mContext, ColornautDataAsyncTask.MODE_SAVE);
+        saveAsyncTask.execute(colornautData);
     }
 
     private Camera getCameraInstance() {
@@ -233,7 +249,13 @@ public class MainActivity extends AppCompatActivity {
                     colorPalette.setPaletteName(inputPaletteName.getText().toString());
                 }
                 colornautData.add(colorPalette);
-                save();
+                //saved = false;
+                //save();
+                saveAsyncTask = new ColornautDataAsyncTask(mContext, ColornautDataAsyncTask.MODE_SAVE);
+                saveAsyncTask.execute(colornautData);
+                closeEditPanel();
+                loadAsyncTask = new ColornautDataAsyncTask(mContext, ColornautDataAsyncTask.MODE_LOAD);
+                loadAsyncTask.execute(colornautData);
             }
         });
         editPanelLinearLayout.addView(saveButton);
@@ -244,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
         closeEditPanel();
     }
 
-    private void closeEditPanel() {
+    public void closeEditPanel() {
         if (isPanelShown) {
             Log.i(TAG, "Closing edit");
             Animation bottomDown = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_down);
@@ -258,35 +280,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void save() {
-        ObjectOutput out = null;
-        try {
-            out = new ObjectOutputStream(new FileOutputStream(new File(getFilesDir(),"")+File.separator+FILENAME));
-            out.writeObject(colornautData);
-            out.close();
-            Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        if (!saved) {
+            ObjectOutput out = null;
+            try {
+                out = new ObjectOutputStream(new FileOutputStream(new File(getFilesDir(), "") + File.separator + FILENAME));
+                out.writeObject(colornautData);
+                out.close();
+                Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
+                saved = true;
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
 
-        ArrayList<ColorPalette> loadedPalettes = load();
-        Log.i(TAG, "Load complete: " + loadedPalettes.toString() + " Count: " + loadedPalettes.size());
-
-        for (ColorPalette loadedPalette: loadedPalettes) {
-            Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
-            for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
-                ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
-                Log.i(TAG, "Color" + i + ": " + swatch.get(0));
-                Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
-                Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
-                Log.i(TAG, "Population" + i + ": " + swatch.get(3));
+            // Testing loaded data after saving to storage
+            ArrayList<ColorPalette> loadedPalettes = load();
+            Log.i(TAG, "Load complete: " + loadedPalettes.toString() + " Count: " + loadedPalettes.size());
+            for (ColorPalette loadedPalette : loadedPalettes) {
+                Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
+                for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
+                    ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
+                    Log.i(TAG, "Color" + i + ": " + swatch.get(0));
+                    Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
+                    Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
+                    Log.i(TAG, "Population" + i + ": " + swatch.get(3));
+                }
             }
         }
         closeEditPanel();
     }
 
-    private ArrayList<ColorPalette> load() {
+    private ArrayList<ColorPalette> load(){
+
         ObjectInputStream input;
         try {
             input = new ObjectInputStream(new FileInputStream(new File(new File(getFilesDir(),"")+File.separator+FILENAME)));
