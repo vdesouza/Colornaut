@@ -1,6 +1,5 @@
 package com.colornaut.colornaut;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,34 +10,16 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
-import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-
-import android.app.Dialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.ImageFormat;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
-import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.support.v4.app.LoaderManager;
-import android.support.v4.content.Loader;
-import android.support.v7.graphics.Palette;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -48,16 +29,12 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.Toast;
-
-import com.google.android.gms.plus.model.people.Person;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
@@ -91,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
     private ColorPreviewsGridAdapter mAdapter;
     private boolean isPanelShown;
 
+    // AsyncTasks for saving and loading palettes
     private ColornautDataAsyncTask saveAsyncTask;
     private ColornautDataAsyncTask loadAsyncTask;
 
@@ -103,14 +81,20 @@ public class MainActivity extends AppCompatActivity {
 
         // Load saved data from memory
         loadAsyncTask = new ColornautDataAsyncTask(mContext, ColornautDataAsyncTask.MODE_LOAD);
-        loadAsyncTask.execute(colornautData);
+        colornautData = () loadAsyncTask.execute(colornautData);
 
-
-////        // Load save data from memory --- happens on UI thread
-//        if (null == (colornautData = load())) {
-//            colornautData = new ArrayList<ColorPalette>();
-//            saved = false;
-//        }
+        // Testing loaded data after saving to storage
+        Log.i(TAG, "Load complete: " + colornautData.toString() + " Count: " + colornautData.size());
+        for (ColorPalette loadedPalette : colornautData) {
+            Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
+            for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
+                ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
+                Log.i(TAG, "Color" + i + ": " + swatch.get(0));
+                Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
+                Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
+                Log.i(TAG, "Population" + i + ": " + swatch.get(3));
+            }
+        }
 
         // get camera if available
         mCamera = getCameraInstance();
@@ -276,6 +260,23 @@ public class MainActivity extends AppCompatActivity {
             editPanelLinearLayout.removeView(inputPaletteName);
             editPanelLinearLayout.removeView(saveButton);
             isPanelShown = false;
+
+            // Testing loaded data after saving to storage
+            ArrayList<ColorPalette> loadedPalettes = load();
+            Log.i(TAG, "Load complete: " + loadedPalettes.toString() + " Count: " + loadedPalettes.size());
+            for (ColorPalette loadedPalette : loadedPalettes) {
+                Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
+                for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
+                    ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
+                    Log.i(TAG, "Color" + i + ": " + swatch.get(0));
+                    Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
+                    Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
+                    Log.i(TAG, "Population" + i + ": " + swatch.get(3));
+                }
+            }
+
+
+
         }
     }
 
@@ -316,6 +317,7 @@ public class MainActivity extends AppCompatActivity {
         ObjectInputStream input;
         try {
             input = new ObjectInputStream(new FileInputStream(new File(new File(getFilesDir(),"")+File.separator+FILENAME)));
+            Log.i(TAG, input.readObject().toString());
             ArrayList<ColorPalette> colorPalettes = (ArrayList<ColorPalette>) input.readObject();
             input.close();
             return colorPalettes;

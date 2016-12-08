@@ -2,7 +2,6 @@ package com.colornaut.colornaut;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.File;
@@ -20,7 +19,7 @@ import java.util.ArrayList;
  * Created by vdesouza on 12/7/16.
  */
 
-public class ColornautDataAsyncTask extends AsyncTask<ArrayList<ColorPalette>, Void, ArrayList<ColorPalette>> {
+public class ColornautDataAsyncTask extends AsyncTask<Void, Void, Void> {
 
     private final static String TAG = "COLORNAUT";
     public static final String MODE_SAVE = "save";
@@ -29,20 +28,22 @@ public class ColornautDataAsyncTask extends AsyncTask<ArrayList<ColorPalette>, V
 
     private Context mContext;
     private String mode;
+    private ArrayList<ColorPalette> colornautData;
 
-    public ColornautDataAsyncTask(Context context, String mode) {
+    public ColornautDataAsyncTask(Context context, ArrayList<ColorPalette> colornautData, String mode) {
         this.mContext = context;
         this.mode = mode;
+        this.colornautData = colornautData;
     }
 
     @Override
-    protected ArrayList<ColorPalette> doInBackground(ArrayList<ColorPalette>... params) {
+    protected Void doInBackground(Void... params) {
         switch (mode) {
             case MODE_SAVE:
                 ObjectOutput out = null;
                 try {
                     out = new ObjectOutputStream(new FileOutputStream(new File(mContext.getFilesDir(), "") + File.separator + FILENAME));
-                    out.writeObject(params[0]);
+                    out.writeObject(colornautData);
                     out.close();
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
@@ -54,41 +55,20 @@ public class ColornautDataAsyncTask extends AsyncTask<ArrayList<ColorPalette>, V
                 ObjectInputStream input;
                 try {
                     input = new ObjectInputStream(new FileInputStream(new File(new File(mContext.getFilesDir(),"")+File.separator+FILENAME)));
-                    params[0] = (ArrayList<ColorPalette>) input.readObject();
+                    colornautData = (ArrayList<ColorPalette>) input.readObject();
                     input.close();
-
-
-                    // Testing loaded data after saving to storage
-                    Log.i(TAG, "Load complete: " + params[0].toString() + " Count: " + params[0].size());
-                    for (ColorPalette loadedPalette : params[0]) {
-                        Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
-                        for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
-                            ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
-                            Log.i(TAG, "Color" + i + ": " + swatch.get(0));
-                            Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
-                            Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
-                            Log.i(TAG, "Population" + i + ": " + swatch.get(3));
-                        }
-                    }
-
-
-
                 } catch (StreamCorruptedException e) {
                     e.printStackTrace();
-                    return null;
                 } catch (FileNotFoundException e) {
                     e.printStackTrace();
-                    return null;
                 } catch (IOException e) {
                     e.printStackTrace();
-                    return null;
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
-                    return null;
                 }
                 break;
         }
-        return params[0];
+        return null;
     }
 
     @Override
@@ -96,12 +76,11 @@ public class ColornautDataAsyncTask extends AsyncTask<ArrayList<ColorPalette>, V
     }
 
     @Override
-    protected void onPostExecute(ArrayList<ColorPalette> result) {
+    protected void onPostExecute(Void result) {
         switch (mode) {
             case MODE_SAVE:
                 Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
                 break;
-
         }
     }
 }
