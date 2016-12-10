@@ -11,6 +11,8 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
 import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -20,6 +22,7 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Bundle;
+import android.support.annotation.IntegerRes;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -34,6 +37,7 @@ import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.GridView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 @SuppressWarnings("deprecation")
@@ -60,6 +64,7 @@ public class MainActivity extends AppCompatActivity {
     private ColorPalette colorPalette;
 
     // views for edit panel
+    private SeekbarWithIntervals seekbarWithIntervals = null;
     private ViewGroup editPanel;
     private LinearLayout editPanelLinearLayout;
     private EditText inputPaletteName;
@@ -95,6 +100,10 @@ public class MainActivity extends AppCompatActivity {
 
         editPanelLinearLayout = (LinearLayout) findViewById(R.id.editPanelLinearLayout);
 
+        List<String> seekbarIntervals = getIntervals();
+        getSeekbarWithIntervals().setIntervals(seekbarIntervals);
+
+
         // set up capture button
         mCaptureButton = (Button) findViewById(R.id.button_capture);
         mCaptureButton.setOnClickListener(new OnClickListener() {
@@ -111,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
-                //intent.putExtra("list", load());
+                intent.putExtra("list", load());
                 startActivity(intent);
             }
         });
@@ -125,6 +134,25 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+    }
+
+    private List<String> getIntervals() {
+        return new ArrayList<String>() {{
+            add("2");
+            add("3");
+            add("4");
+            add("5");
+            add("6");
+            add("7");
+            add("8");
+        }};
+    }
+
+    private SeekbarWithIntervals getSeekbarWithIntervals() {
+        if (seekbarWithIntervals == null) {
+            seekbarWithIntervals = (SeekbarWithIntervals) findViewById(R.id.seekbarWithIntervals);
+        }
+        return seekbarWithIntervals;
     }
 
     @Override
@@ -173,6 +201,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, mBitmapTaken.toString());
 
                 // create color palette
+
                 colorPalette = new ColorPalette(mBitmapTaken);
 
                 // open edit panel
@@ -194,9 +223,36 @@ public class MainActivity extends AppCompatActivity {
         editPanelLinearLayout.removeView(saveButton);
 
         // build gridview of palette colors
-        GridView mPaletteGridView = (GridView) findViewById(R.id.paletteGridView);
-        mAdapter = new ColorPreviewsGridAdapter(this, colorPalette.getAllRgbValues());
+        ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, 5));
+        final GridView mPaletteGridView = (GridView) findViewById(R.id.paletteGridView);
+        mAdapter = new ColorPreviewsGridAdapter(this, rgbValues);
+        mPaletteGridView.setColumnWidth(editPanelLinearLayout.getWidth() / 6);
         mPaletteGridView.setAdapter(mAdapter);
+        seekbarWithIntervals.setProgress(3);
+        // behaviors for seekbar to select number of items in palette
+        seekbarWithIntervals.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            int progress = 5;
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                progress = progressValue + 2;
+                ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, progress));
+                mAdapter = new ColorPreviewsGridAdapter(MainActivity.this, rgbValues);
+                mAdapter.notifyDataSetChanged();
+                mPaletteGridView.setColumnWidth((int)(editPanelLinearLayout.getWidth() - 3.8) / mAdapter.getCount());
+                mPaletteGridView.setAdapter(mAdapter);
+            }
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, progress));
+                mAdapter = new ColorPreviewsGridAdapter(MainActivity.this, rgbValues);
+                mAdapter.notifyDataSetChanged();
+                mPaletteGridView.setColumnWidth((int)(editPanelLinearLayout.getWidth() - 3.8) / mAdapter.getCount());
+                mPaletteGridView.setAdapter(mAdapter);
+            }
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+            }
+        });
 
         // Set an EditText view to get user input and Save button
         inputPaletteName = new EditText(mContext);
@@ -220,9 +276,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    public void slideDown(View v) {
-        closeEditPanel();
-    }
+    public void slideDown(View v) { closeEditPanel(); }
 
     private void closeEditPanel() {
         if (isPanelShown) {

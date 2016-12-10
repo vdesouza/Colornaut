@@ -41,6 +41,23 @@ public class ColorPalette implements Serializable {
         // TODO: Save image to internal memory and store image path
         // this.imagePath = getImagePath(image);
 
+        // TODO - Asynchronous color palette builder. Works but is always one picture behind for some reason...
+//        Palette.from(image).generate(new Palette.PaletteAsyncListener() {
+//            public void onGenerated(Palette p) {
+//                Palette mPalette = p;
+//                List<Palette.Swatch> paletteSwatches = mPalette.getSwatches();
+//                for (int i = 0; i <= paletteSwatches.size() - 1; i++) {
+//                    ArrayList<Integer> swatch = new ArrayList<Integer>();
+//                    Palette.Swatch paletteSwatch = paletteSwatches.get(i);
+//                    swatch.add(0, paletteSwatch.getRgb());
+//                    swatch.add(1, paletteSwatch.getTitleTextColor());
+//                    swatch.add(2, paletteSwatch.getBodyTextColor());
+//                    swatch.add(3, paletteSwatch.getPopulation());
+//                    palette.put("Color " + i, swatch);
+//                }
+//            }
+//        });
+
         Palette mPalette = Palette.from(image).generate();
         List<Palette.Swatch> paletteSwatches = mPalette.getSwatches();
         for (int i = 0; i <= paletteSwatches.size() - 1; i++) {

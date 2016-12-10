@@ -48,7 +48,9 @@ public class ColorPreviewsGridAdapter extends BaseAdapter {
         ImageView imageView = new ImageView(mContext);
         imageView.setBackgroundColor((Integer) getItem(position));
         imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        imageView.setLayoutParams(new GridView.LayoutParams(70, 70));
+        int width = (parent.getWidth()) / mColors.size();
+        int height = (parent.getWidth() - 4) / 4;
+        imageView.setLayoutParams(new GridView.LayoutParams(width, height));
         return imageView;
     }
 
