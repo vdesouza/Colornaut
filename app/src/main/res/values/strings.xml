@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Colornaut</string>
+    <string name="edit_panel_title">Select number of colors and palette settings</string>
+    <string name="edit_panel_cancel_button">Cancel</string>
 </resources>

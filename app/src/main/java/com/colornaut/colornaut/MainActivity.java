@@ -23,6 +23,7 @@ import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.os.Bundle;
 import android.support.annotation.IntegerRes;
+import android.support.v7.app.ActionBar;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
@@ -37,6 +38,7 @@ import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.GridView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
@@ -219,6 +221,7 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "Launched edit");
         isPanelShown = true;
 
+        // clear previous LinearLayout
         editPanelLinearLayout.removeView(inputPaletteName);
         editPanelLinearLayout.removeView(saveButton);
 
@@ -228,6 +231,8 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new ColorPreviewsGridAdapter(this, rgbValues);
         mPaletteGridView.setColumnWidth(editPanelLinearLayout.getWidth() / 6);
         mPaletteGridView.setAdapter(mAdapter);
+
+        // set up seekbar
         seekbarWithIntervals.setProgress(3);
         // behaviors for seekbar to select number of items in palette
         seekbarWithIntervals.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {

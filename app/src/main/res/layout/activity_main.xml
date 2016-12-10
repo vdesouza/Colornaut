@@ -63,32 +63,39 @@
                 android:orientation="vertical"
                 android:background="#ffffff">
 
-                <RelativeLayout
+                <LinearLayout
                     android:id="@+id/editPanelTopLayer"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:background="#ffffff">
+                    android:background="#ffffff"
+                    android:padding="14dp">
 
-                    <!-- seekbar to select number of colors in palette -->
-                    <com.colornaut.colornaut.SeekbarWithIntervals
-                        android:id="@+id/seekbarWithIntervals"
-                        android:layout_width="wrap_content"
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_centerInParent="true">
-                    </com.colornaut.colornaut.SeekbarWithIntervals>
+                        android:layout_weight="1"
+                        android:text="@string/edit_panel_title"
+                        android:textSize="16sp"/>
 
                     <!-- button that closes edit panel without saving -->
                     <Button
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:id="@+id/slideDownButton"
-                        android:text="Cancel"
-                        android:onClick="slideDown"
-                        android:gravity="top"
-                        android:layout_toRightOf="@id/seekbarWithIntervals"/>
+                        android:text="@string/edit_panel_cancel_button"
+                        android:onClick="slideDown"/>
 
-                </RelativeLayout>
+                </LinearLayout>
+
+                <!-- seekbar to select number of colors in palette -->
+                <com.colornaut.colornaut.SeekbarWithIntervals
+                    android:id="@+id/seekbarWithIntervals"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_centerInParent="true"
+                    android:paddingBottom="12dp">
+                </com.colornaut.colornaut.SeekbarWithIntervals>
 
                 <!-- GridView that holds palette preview -->
                 <GridView
@@ -103,7 +110,7 @@
                     android:gravity="center"
                     android:layout_weight="1"/>
 
-                <!-- because of issues with gridview EditText for name and save button are placed programmatically in main_actiivty -->
+                <!-- because of issues with gridview, EditText for name and save button are placed programmatically in main_actiivty -->
 
             </LinearLayout>
 
