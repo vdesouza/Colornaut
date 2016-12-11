@@ -1,34 +1,55 @@
 package com.colornaut.colornaut;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.StreamCorruptedException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
+import android.location.Location;
+import android.location.LocationListener;
+import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.IntegerRes;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
@@ -40,7 +61,11 @@ import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 @SuppressWarnings("deprecation")
 public class MainActivity extends AppCompatActivity {
@@ -69,9 +94,12 @@ public class MainActivity extends AppCompatActivity {
     private SeekbarWithIntervals seekbarWithIntervals = null;
     private ViewGroup editPanel;
     private LinearLayout editPanelLinearLayout;
+    private View editPanelBorder;
     private EditText inputPaletteName;
     private Button saveButton;
     private ColorPreviewsGridAdapter mAdapter;
+    private String locationString = "";
+    private TextView locationTextView;
     private boolean isPanelShown;
 
     @Override
@@ -203,8 +231,17 @@ public class MainActivity extends AppCompatActivity {
                 Log.i(TAG, mBitmapTaken.toString());
 
                 // create color palette
-
                 colorPalette = new ColorPalette(mBitmapTaken);
+
+                // change action bar and status bar color
+                getSupportActionBar().setBackgroundDrawable(new ColorDrawable(colorPalette.getAllRgbValues().get(1)));
+                getSupportActionBar().setDisplayShowTitleEnabled(false);
+                getSupportActionBar().setDisplayShowTitleEnabled(true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    Window window = getWindow();
+                    window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                    window.setStatusBarColor(colorPalette.getAllRgbValues().get(0));
+                }
 
                 // open edit panel
                 launchEditPanel();
@@ -222,8 +259,13 @@ public class MainActivity extends AppCompatActivity {
         isPanelShown = true;
 
         // clear previous LinearLayout
+        editPanelLinearLayout.removeView(locationTextView);
         editPanelLinearLayout.removeView(inputPaletteName);
         editPanelLinearLayout.removeView(saveButton);
+
+        // set editPanel border
+        editPanelBorder = (View) findViewById(R.id.editPanelBorder);
+        editPanelBorder.setBackgroundColor(colorPalette.getAllRgbValues().get(0));
 
         // build gridview of palette colors
         ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, 5));
@@ -263,10 +305,24 @@ public class MainActivity extends AppCompatActivity {
         inputPaletteName = new EditText(mContext);
         inputPaletteName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         inputPaletteName.setHint("Enter palette name");
+        inputPaletteName.setPadding(20, 10, 20, 10);
         editPanelLinearLayout.addView(inputPaletteName);
+
+        // set up location tracker and display location
+        locationTextView = new TextView(mContext);
+        locationString = "Getting Location Data...";
+        locationTextView.setText(locationString);
+        locationTextView.setPadding(20, 10, 20, 20);
+        locationTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_location, 0, 0, 0);
+        editPanelLinearLayout.addView(locationTextView);
+        getLocation();
 
         saveButton = new Button(mContext);
         saveButton.setText("Save");
+        saveButton.setBackgroundColor(colorPalette.getAllRgbValues().get(0));
+        saveButton.setTextColor(Color.WHITE);
+        saveButton.setTextSize(20);
+        saveButton.setHeight(70);
         saveButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -290,6 +346,7 @@ public class MainActivity extends AppCompatActivity {
             editPanel.startAnimation(bottomDown);
             editPanel.setVisibility(View.INVISIBLE);
             Log.i(TAG, "Closed edit");
+            editPanelLinearLayout.removeView(locationTextView);
             editPanelLinearLayout.removeView(inputPaletteName);
             editPanelLinearLayout.removeView(saveButton);
             isPanelShown = false;
@@ -345,6 +402,112 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // starts location services to get lat lon data from gps or network
+    private void getLocation() {
+        // adapted from http://stackoverflow.com/a/29658427
+        OneTimeLocationProvider.requestSingleUpdate(mContext, new OneTimeLocationProvider.LocationCallback() {
+            @Override
+            public void onNewLocationAvailable(Location location) {
+                getLocationString(location);
+                Log.d("Location", "my location is " + location.getLatitude() + ", " + location.getLongitude());
+            }
+        });
+    }
+
+    // performs AsyncTask call to get name of location based on lat and lon
+    private void getLocationString(Location location) {
+        final String USERNAME = "vdesouza";
+        URL url = null;
+        // build URL with lat lon
+        try {
+            double lat = location.getLatitude();
+            double lon = location.getLongitude();
+            url = new URL("http://api.geonames.org/findNearbyPlaceNameJSON?lat="+lat+"&lng="+lon+"&username="+USERNAME);
+        } catch (MalformedURLException e) {
+            Log.i(TAG, "Bad URL");
+        }
+        if (url != null) {
+            // AsyncTask call
+            new GetLocationNameAsyncTask().execute(url);
+        }
+    }
+
+    // AsyncTask to connect to geoname.org and get city name of where palette is created
+    private class GetLocationNameAsyncTask extends AsyncTask<URL, Void, String> {
+        @Override
+        protected String doInBackground(URL... url) {
+            Log.i(TAG, "Entered AsyncTask.");
+            return buildLocationNameString(url[0]);
+        }
+        @Override
+        protected void onPostExecute(String result) {
+            // check if there were any errors found
+            Log.i(TAG, "Result: " + result);
+            // add location string to ColorPalette and to editPanel
+            if (result != null) {
+                locationString = result;
+            } else {
+                locationString = "Could not get location data at the moment.";
+            }
+            if (locationTextView != null) {
+                locationTextView.setText(locationString);
+            }
+            colorPalette.setLocation(locationString);
+        }
+    }
+
+    // parses and formats json recieved from connecting to geonames.org
+    private String buildLocationNameString(URL url) {
+        String locationName = "";
+        HttpURLConnection connection = null;
+        // make connection into an HttpUrlConnection for url
+        try {
+            // connect and read
+            connection = (HttpURLConnection) url.openConnection();
+            JSONObject jsonLocation = new JSONObject(read(connection));
+            // parse JSON for errors or data
+            if (jsonLocation.getJSONArray("geonames").length() != 0) {
+                jsonLocation = jsonLocation.getJSONArray("geonames").getJSONObject(0);
+                Log.i(TAG, jsonLocation.toString());
+                // get json data
+                String city = jsonLocation.getString("name");
+                String country = jsonLocation.getString("countryName");
+                Log.i(TAG, "Got JSON data: " + city + country);
+                // build string
+                locationName = city + ", " +  country + " on " + DateFormat.getDateTimeInstance().format(new Date());
+                Log.i(TAG, locationName);
+            }
+        } catch (MalformedURLException e) {
+            Log.i(TAG, "Malformed URL.");
+        } catch (IOException e) {
+            Log.i(TAG, "Invalid URL.");
+        } catch (JSONException e) {
+            Log.i(TAG, "Invalid JSON.");
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+            return locationName;
+        }
+    }
+
+    // helper to read data from http connection
+    private static String read(HttpURLConnection connection) {
+        StringBuffer stringBuffer = new StringBuffer();
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    connection.getInputStream()));
+            String line = new String();
+            while ((line = reader.readLine()) != null) {
+                stringBuffer.append(line + "\n");
+            }
+        } catch (IOException e) {
+            stringBuffer.append("Failed");
+        }
+        Log.i(TAG, stringBuffer.toString());
+        return stringBuffer.toString();
     }
 
 //    public class ShareView extends View {

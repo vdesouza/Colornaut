@@ -88,6 +88,7 @@ public class ColorPalette implements Serializable {
 
     public String getPaletteName() { return paletteName; }
     public void setPaletteName(String name) { this.paletteName = name; }
+    public void setLocation(String location) { this.location = location; }
 
 
 //    public List<Palette.Swatch> getPaletteSwatches() { return paletteSwatches; }
