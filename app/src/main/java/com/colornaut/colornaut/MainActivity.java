@@ -24,6 +24,7 @@ import java.util.List;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -40,8 +41,6 @@ import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.IntegerRes;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.text.InputType;
@@ -58,8 +57,8 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -79,7 +78,8 @@ public class MainActivity extends AppCompatActivity {
     // views for main screen
     private Camera mCamera;
     private CameraPreview mCameraPreview;
-    private Button mCaptureButton;
+    private ImageButton mCaptureButton;
+    private FrameLayout.LayoutParams captureButtonPrevPosition;
     private Button mPaletteGalleryButton;
     private Context mContext;
     private FrameLayout mLayoutPreview;
@@ -135,34 +135,47 @@ public class MainActivity extends AppCompatActivity {
 
 
         // set up capture button
-        mCaptureButton = (Button) findViewById(R.id.button_capture);
+        mCaptureButton = (ImageButton) findViewById(R.id.button_capture);
+        ColorStateList rippleColor = ContextCompat.getColorStateList(mContext, R.color.fab_ripple_color);
+        mCaptureButton.setBackgroundTintList(rippleColor);
         mCaptureButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                captureImage();
+                Animation shutterCloseAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.shutter_close);
+                shutterCloseAnim.setAnimationListener(new Animation.AnimationListener() {
+                    @Override
+                    public void onAnimationStart(Animation animation) {}
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {}
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+                        captureImage();
+                    }
+                });
+                mCaptureButton.startAnimation(shutterCloseAnim);
             }
         });
 
         // set up palette gallery button
-        mPaletteGalleryButton = (Button) findViewById(R.id.button_palette_gallery);
-        mPaletteGalleryButton.setOnClickListener(new View.OnClickListener() {
+//        mPaletteGalleryButton = (Button) findViewById(R.id.button_palette_gallery);
+//        mPaletteGalleryButton.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View view) {
+//                Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
+//                intent.putExtra("list", load());
+//                startActivity(intent);
+//            }
+//        });
 
-            @Override
-            public void onClick(View view) {
-                Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
-                intent.putExtra("list", load());
-                startActivity(intent);
-            }
-        });
-
-        mShareButton = (Button) findViewById(R.id.buttonShare);
-        mShareButton.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                // shareView = new ShareView(mContext, null);
-                //mLayoutPreview.addView(shareView);
-            }
-        });
+//        mShareButton = (Button) findViewById(R.id.buttonShare);
+//        mShareButton.setOnClickListener(new OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                // shareView = new ShareView(mContext, null);
+//                //mLayoutPreview.addView(shareView);
+//            }
+//        });
 
     }
 
@@ -251,12 +264,32 @@ public class MainActivity extends AppCompatActivity {
 
     private void launchEditPanel() {
         Log.i(TAG, "Launching edit");
-        Animation bottomUp = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up);
-        editPanel.startAnimation(bottomUp);
-        editPanel.setVisibility(View.VISIBLE);
-        editPanel.bringToFront();
+        if (!isPanelShown) {
+            Animation bottomUp = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up);
+            Animation bottomUpButton = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up_button);
+            bottomUpButton.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {
+                }
+
+                @Override
+                public void onAnimationRepeat(Animation animation) {
+                }
+
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mCaptureButton.getLayoutParams();
+                    lp.bottomMargin = (mCameraPreview.getHeight() / 2) - 30;
+                    mCaptureButton.setLayoutParams(lp);
+                }
+            });
+            mCaptureButton.startAnimation(bottomUpButton);
+            editPanel.startAnimation(bottomUp);
+            editPanel.setVisibility(View.VISIBLE);
+            editPanel.bringToFront();
+            isPanelShown = true;
+        }
         Log.i(TAG, "Launched edit");
-        isPanelShown = true;
 
         // clear previous LinearLayout
         editPanelLinearLayout.removeView(locationTextView);
@@ -343,6 +376,20 @@ public class MainActivity extends AppCompatActivity {
         if (isPanelShown) {
             Log.i(TAG, "Closing edit");
             Animation bottomDown = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_down);
+            Animation bottomDownButton = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_down_button);
+            bottomDownButton.setAnimationListener(new Animation.AnimationListener() {
+                @Override
+                public void onAnimationStart(Animation animation) {}
+                @Override
+                public void onAnimationRepeat(Animation animation) {}
+                @Override
+                public void onAnimationEnd(Animation animation) {
+                    FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mCaptureButton.getLayoutParams();
+                    lp.bottomMargin = 40;
+                    mCaptureButton.setLayoutParams(lp);
+                }
+            });
+            mCaptureButton.startAnimation(bottomDownButton);
             editPanel.startAnimation(bottomDown);
             editPanel.setVisibility(View.INVISIBLE);
             Log.i(TAG, "Closed edit");

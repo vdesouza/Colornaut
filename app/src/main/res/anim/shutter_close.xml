@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+     android:interpolator="@android:interpolator/accelerate_decelerate"
+     android:ordering="sequentially">
+
+    <set xmlns:android="http://schemas.android.com/apk/res/android"
+         android:fillAfter="false"
+         android:fillBefore="false"
+         android:shareInterpolator="true" >
+
+        <set xmlns:android="http://schemas.android.com/apk/res/android"
+             android:fillAfter="false"
+             android:fillBefore="false"
+             android:shareInterpolator="true"
+             android:ordering="together">
+            <scale
+                android:duration="200"
+                android:fillAfter="true"
+                android:fillBefore="false"
+                android:fillEnabled="true"
+                android:fromXScale="1.0"
+                android:fromYScale="1.0"
+                android:toXScale="0.25"
+                android:toYScale="0.25"
+                android:pivotX="50.0"
+                android:pivotY="50.0"/>
+            <rotate
+                android:fromDegrees="0"
+                android:toDegrees="-160"
+                android:toYScale="0.0"
+                android:pivotX="50%"
+                android:pivotY="50%"
+                android:duration="200"/>
+        </set>
+        <set xmlns:android="http://schemas.android.com/apk/res/android"
+             android:fillAfter="false"
+             android:fillBefore="false"
+             android:shareInterpolator="true"
+             android:ordering="together">
+            <scale
+                android:duration="200"
+                android:fillAfter="true"
+                android:fillBefore="false"
+                android:fillEnabled="true"
+                android:fromXScale="0.25"
+                android:fromYScale="0.25"
+                android:startOffset="200"
+                android:toXScale="1.0"
+                android:toYScale="1.0"
+                android:pivotX="50.0"
+                android:pivotY="50.0"/>
+            <rotate
+                android:fromDegrees="-160"
+                android:toDegrees="0"
+                android:toYScale="0.0"
+                android:pivotX="50%"
+                android:pivotY="50%"
+                android:duration="200"/>
+        </set>
+    </set>
+
+</set>

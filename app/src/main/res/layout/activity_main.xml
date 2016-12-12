@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:orientation="horizontal"
-    android:id="@+id/main_activity">
+                xmlns:app="http://schemas.android.com/tools"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                xmlns:app1="http://schemas.android.com/apk/res-auto"
+                android:orientation="horizontal"
+                android:id="@+id/main_activity">
 
     <!--main view of camera preview and buttons-->
     <FrameLayout
@@ -12,33 +14,14 @@
         android:layout_height="match_parent"
         android:id="@+id/camera_preview">
 
-        <!-- Layout containing the main buttons: capture photo, view saved palette, load from gallery(if theres time) -->
-        <LinearLayout
-            android:id="@+id/linear_layout_camera_buttons"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical">
-
-            <Button
-                android:text="Share"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/buttonShare" />
-
-            <Button
-                android:text="Saved Palettes"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:id="@+id/button_palette_gallery" />
-
-            <Button
-                android:id="@+id/button_capture"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Capture"
-                android:layout_marginTop="100dp"/>
-
-        </LinearLayout>
+        <ImageButton
+            android:id="@+id/button_capture"
+            android:src="@drawable/ic_camera"
+            android:background="@drawable/round_button"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="40dp"/>
 
         <!-- holder for panel that slides up when picture is take to edit color palette and save -->
         <LinearLayout
