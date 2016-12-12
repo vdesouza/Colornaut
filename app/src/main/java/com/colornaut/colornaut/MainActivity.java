@@ -45,6 +45,9 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.ActionBar;
 import android.text.InputType;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -79,8 +82,6 @@ public class MainActivity extends AppCompatActivity {
     private Camera mCamera;
     private CameraPreview mCameraPreview;
     private ImageButton mCaptureButton;
-    private FrameLayout.LayoutParams captureButtonPrevPosition;
-    private Button mPaletteGalleryButton;
     private Context mContext;
     private FrameLayout mLayoutPreview;
     private Button mShareButton;
@@ -156,18 +157,6 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // set up palette gallery button
-//        mPaletteGalleryButton = (Button) findViewById(R.id.button_palette_gallery);
-//        mPaletteGalleryButton.setOnClickListener(new View.OnClickListener() {
-//
-//            @Override
-//            public void onClick(View view) {
-//                Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
-//                intent.putExtra("list", load());
-//                startActivity(intent);
-//            }
-//        });
-
 //        mShareButton = (Button) findViewById(R.id.buttonShare);
 //        mShareButton.setOnClickListener(new OnClickListener() {
 //            @Override
@@ -177,25 +166,6 @@ public class MainActivity extends AppCompatActivity {
 //            }
 //        });
 
-    }
-
-    private List<String> getIntervals() {
-        return new ArrayList<String>() {{
-            add("2");
-            add("3");
-            add("4");
-            add("5");
-            add("6");
-            add("7");
-            add("8");
-        }};
-    }
-
-    private SeekbarWithIntervals getSeekbarWithIntervals() {
-        if (seekbarWithIntervals == null) {
-            seekbarWithIntervals = (SeekbarWithIntervals) findViewById(R.id.seekbarWithIntervals);
-        }
-        return seekbarWithIntervals;
     }
 
     @Override
@@ -210,6 +180,31 @@ public class MainActivity extends AppCompatActivity {
         releaseCamera();
     }
 
+    // creates the options on the action bar for launching gallery
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        super.onCreateOptionsMenu(menu);
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.activity_main_menu, menu);
+        return true;
+    }
+
+    // performs actions of options clicked for action bar
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        // handles actions for selecting tools
+        switch (item.getItemId()) {
+            case R.id.launch_gallery:
+                Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
+                intent.putExtra("list", load());
+                startActivity(intent);
+                return true;
+        }
+        return false;
+    }
+
+    // opens access to camera
     private Camera getCameraInstance() {
         Camera camera = null;
         try {
@@ -220,6 +215,7 @@ public class MainActivity extends AppCompatActivity {
         return camera;
     }
 
+    // closes camera so it can be used at later time
     private void releaseCamera() {
         // stop and release camera
         if (mCamera != null) {
@@ -228,6 +224,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // captures a bitmap and creates a color palette
     private void captureImage() {
         // takes the preview on screen and puts it in a bitmap
         mCamera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
@@ -262,8 +259,10 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    // opens the edit panel for saving palette
     private void launchEditPanel() {
         Log.i(TAG, "Launching edit");
+        // animations for panel and shutter button
         if (!isPanelShown) {
             Animation bottomUp = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up);
             Animation bottomUpButton = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_up_button);
@@ -350,6 +349,7 @@ public class MainActivity extends AppCompatActivity {
         editPanelLinearLayout.addView(locationTextView);
         getLocation();
 
+        // set up save button
         saveButton = new Button(mContext);
         saveButton.setText("Save");
         saveButton.setBackgroundColor(colorPalette.getAllRgbValues().get(0));
@@ -367,12 +367,42 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         editPanelLinearLayout.addView(saveButton);
+    }
 
+    // intervals for seekbar
+    private List<String> getIntervals() {
+        return new ArrayList<String>() {{
+            add("2");
+            add("3");
+            add("4");
+            add("5");
+            add("6");
+            add("7");
+            add("8");
+        }};
+    }
+
+    // builds seekbar
+    private SeekbarWithIntervals getSeekbarWithIntervals() {
+        if (seekbarWithIntervals == null) {
+            seekbarWithIntervals = (SeekbarWithIntervals) findViewById(R.id.seekbarWithIntervals);
+        }
+        return seekbarWithIntervals;
     }
 
     public void slideDown(View v) { closeEditPanel(); }
 
+    // close the edit panel if the back button is pressed
+    @Override
+    public void onBackPressed() {
+        if (isPanelShown) {
+            closeEditPanel();
+        }
+    }
+
+    // dismisses the edit panel without saving
     private void closeEditPanel() {
+        // animations for closing panel
         if (isPanelShown) {
             Log.i(TAG, "Closing edit");
             Animation bottomDown = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.bottom_down);
@@ -400,6 +430,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // save all created palettes during use to device storage
     private void save() {
         ObjectOutput out = null;
         try {
@@ -429,6 +460,7 @@ public class MainActivity extends AppCompatActivity {
         closeEditPanel();
     }
 
+    // loads saved palettes from device storage
     private ArrayList<ColorPalette> load() {
         ObjectInputStream input;
         try {
