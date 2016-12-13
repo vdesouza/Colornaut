@@ -5,7 +5,6 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -17,12 +16,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
@@ -53,9 +49,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
     PGListAdapter listAdapter;
 
     private final static String TAG = "COLORNAUT:gallery";
-    private ArrayList<ColorPalette> colornautData;
-
-    private static final int MENU_RESET = Menu.FIRST;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +58,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
 
         Log.i(TAG, "loading");
         Intent intent = getIntent();
-        colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
+        ArrayList<ColorPalette> colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
         Log.i(TAG, "loaded");
 
         getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.DKGRAY));
@@ -114,6 +107,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             if ( ((CheckBox) checks.findViewById(R.id.name)).isChecked() ) {
                 canvas.drawText(palette.getPaletteName(), (int) (width / 2.3), height / 10, paint);
             }
+            canvas.setBitmap(image);
 //            if ( ((CheckBox) checks.findViewById(R.id.rgb)).isChecked() ) {
 //                canvas.drawText(palette.makeRgbString(), 00, 00, paint);
 //            }
@@ -141,11 +135,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         @Override
         public long getItemId(int i) {
             return 0; //Possibly unnecessary
-        }
-
-        public void clear() {
-            paletteList.clear();
-            notifyDataSetChanged();
         }
 
         class ViewHolder {
