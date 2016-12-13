@@ -5,36 +5,32 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.GridView;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -53,9 +49,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
     PGListAdapter listAdapter;
 
     private final static String TAG = "COLORNAUT:gallery";
-    private ArrayList<ColorPalette> colornautData;
-
-    private static final int MENU_RESET = Menu.FIRST;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,7 +58,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
 
         Log.i(TAG, "loading");
         Intent intent = getIntent();
-        colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
+        ArrayList<ColorPalette> colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
         Log.i(TAG, "loaded");
 
         getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.DKGRAY));
@@ -83,58 +76,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         listView.setAdapter(listAdapter);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // only show options menu on portrait view
-        super.onCreateOptionsMenu(menu);
-        menu.add(Menu.NONE, MENU_RESET, Menu.NONE, "Remove all saved palettes");
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case MENU_RESET:
-                showResetDialog();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    private void showResetDialog() {
-        AlertDialog.Builder alert = new AlertDialog.Builder(this);
-
-        alert.setTitle("Erase all palettes?");
-        alert.setMessage("This cannot be undone.");
-
-        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                colornautData = new ArrayList<ColorPalette>();
-                listAdapter.clear();
-            }
-        });
-
-        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Canceled.
-            }
-        });
-
-        alert.show();
-    }
-
-    @Override
-    public void onBackPressed() {
-        Intent data = new Intent();
-
-        // Create intent to send back to main activity when back button is pressed.
-        data.putExtra("ColornautData", colornautData);
-
-        setResult(RESULT_OK, data);
-        finish();
-    }
-
     // CUSTOM LIST ADAPTER
     private class PGListAdapter extends BaseAdapter {
         public List<ColorPalette> paletteList = new ArrayList<>();
@@ -150,9 +91,34 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
-        public void clear() {
-            paletteList.clear();
-            notifyDataSetChanged();
+        public void makeImage(Dialog checks, ColorPalette palette, Bitmap image) {
+            Bitmap orig = palette.loadImageFromStorage();
+            int width = orig.getWidth() * 2, height = (int) (orig.getHeight() * 1.33);
+            image = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas();
+            canvas.setBitmap(image);
+            canvas.drawColor(Color.WHITE);
+            Paint paint = new Paint();
+            paint.setTextSize(16f);
+            paint.setColor(Color.BLACK);
+            if ( ((CheckBox) checks.findViewById(R.id.img)).isChecked() ) {
+                canvas.drawBitmap(orig, width / 6, height / 10, null);
+            }
+            if ( ((CheckBox) checks.findViewById(R.id.name)).isChecked() ) {
+                canvas.drawText(palette.getPaletteName(), (int) (width / 2.3), height / 10, paint);
+            }
+//            if ( ((CheckBox) checks.findViewById(R.id.rgb)).isChecked() ) {
+//                canvas.drawText(palette.makeRgbString(), 00, 00, paint);
+//            }
+//            if ( ((CheckBox) checks.findViewById(R.id.hex)).isChecked() ) {
+//                canvas.drawText(palette.makeHexString(), 00000, 0000, paint);
+//            }
+//            if ( ((CheckBox) findViewById(R.id.time)).isChecked() ) {
+//
+//            }
+//            if ( ((CheckBox) findViewById(R.id.loc)).isChecked() ) {
+//                canvas.drawText(palette.getLocation(), 00000, 0000, paint);
+//            }
         }
 
         @Override
@@ -254,7 +220,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
                 @Override
                 public void onClick(View v) {
 
-                    makeShareDialog(colorPalette.loadImageFromStorage());
+                    makeShareDialog(colorPalette, colorPalette.loadImageFromStorage());
 
                 }
             });
@@ -262,7 +228,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             return itemLayout;
         }
 
-        private void makeShareDialog(Bitmap orig) {
+        private void makeShareDialog(final ColorPalette palette, Bitmap orig) {
 
             final Bitmap image = Bitmap.createBitmap(orig.getWidth()  * 2, (int) (orig.getHeight() * 1.33), Bitmap.Config.ARGB_8888);
 
@@ -276,6 +242,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             Button confirm = (Button) dialog.findViewById(R.id.share_info);
             confirm.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View view) {
+                    makeImage(dialog, palette, image);
                     dialog.dismiss();
                     ImageButton fb = (ImageButton) shareTo.findViewById(R.id.fb_btn);
                     fb.setOnClickListener(new View.OnClickListener() {
@@ -364,6 +331,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             values.put(MediaStore.MediaColumns.DATA, filePath);
             context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
         }
+
 
     }
 }
