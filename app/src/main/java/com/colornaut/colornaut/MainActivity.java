@@ -319,6 +319,8 @@ public class MainActivity extends AppCompatActivity {
                 ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, progress));
                 mAdapter = new ColorPreviewsGridAdapter(MainActivity.this, rgbValues);
                 mAdapter.notifyDataSetChanged();
+                mPaletteGridView.setColumnWidth((int)(editPanelLinearLayout.getWidth() - 3.8) / mAdapter.getCount());
+                mPaletteGridView.setAdapter(mAdapter);
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
