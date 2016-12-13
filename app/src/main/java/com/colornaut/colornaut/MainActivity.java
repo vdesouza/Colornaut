@@ -49,6 +49,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -96,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
     private TextView locationTextView;
     private boolean isPanelShown;
 
+    private Toast mToast;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,15 +111,8 @@ public class MainActivity extends AppCompatActivity {
             colornautData = new ArrayList<ColorPalette>();
         }
 
-        // get camera if available
-        mCamera = getCameraInstance();
-
-        // set up layout and camera view
-        mLayoutPreview = (FrameLayout) findViewById(R.id.camera_preview);
-        if (mCamera != null) {
-            mCameraPreview = new CameraPreview(this, mCamera);
-            mLayoutPreview.addView(mCameraPreview, 0);
-        }
+        // toast to show messages - this is so toasts can be dismissed
+        mToast = Toast.makeText(mContext, "", Toast.LENGTH_SHORT);
 
         editPanel = (ViewGroup) findViewById(R.id.edit_panel);
         editPanel.setVisibility(View.INVISIBLE);
@@ -164,6 +160,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onResume() {
         super.onResume();
+        // get camera if available
+        mCamera = getCameraInstance();
+
+        // set up layout and camera view
+        mLayoutPreview = (FrameLayout) findViewById(R.id.camera_preview);
+        if (mCamera != null) {
+            mCameraPreview = new CameraPreview(this, mCamera);
+            mLayoutPreview.addView(mCameraPreview, 0);
+        }
     }
 
     @Override
@@ -212,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
     private void releaseCamera() {
         // stop and release camera
         if (mCamera != null) {
+            mCameraPreview.getHolder().removeCallback(mCameraPreview);
             mCamera.release();
             mCamera = null;
         }
@@ -235,6 +241,9 @@ public class MainActivity extends AppCompatActivity {
 
                 // create color palette
                 colorPalette = new ColorPalette(mBitmapTaken);
+
+                // making image smaller for efficiency
+                mBitmapTaken = Bitmap.createScaledBitmap(mBitmapTaken, previewSize.width/2, previewSize.height/2, true);
 
                 // change action bar and status bar color
                 getSupportActionBar().setBackgroundDrawable(new ColorDrawable(colorPalette.getAllRgbValues().get(1)));
@@ -329,6 +338,7 @@ public class MainActivity extends AppCompatActivity {
         inputPaletteName.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
         inputPaletteName.setHint("Enter palette name");
         inputPaletteName.setPadding(20, 10, 20, 10);
+        inputPaletteName.setMaxLines(1);
         editPanelLinearLayout.addView(inputPaletteName);
 
         // set up location tracker and display location
@@ -357,6 +367,14 @@ public class MainActivity extends AppCompatActivity {
                 colorPalette.setImagePath(saveBitmap(mBitmapTaken));
                 colorPalette.setSavedNumber(seekbarWithIntervals.getProgress() + 2);
                 colornautData.add(colorPalette);
+                // hide keyboard if open
+                try {
+                    InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(inputPaletteName.getWindowToken(), 0);
+                } catch (Exception e) {
+                    // keyboard is already down
+                }
+                // save to file
                 save();
             }
         });
@@ -431,7 +449,8 @@ public class MainActivity extends AppCompatActivity {
             out = new ObjectOutputStream(new FileOutputStream(new File(getFilesDir(),"")+File.separator+FILENAME));
             out.writeObject(colornautData);
             out.close();
-            Toast.makeText(mContext, "Palette Saved!", Toast.LENGTH_SHORT).show();
+            mToast.setText("Palette Saved!");
+            mToast.show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -456,13 +475,15 @@ public class MainActivity extends AppCompatActivity {
 
     // save bitmap taken to device storage and return the file path
     // adapted from http://stackoverflow.com/a/17674787
-    private String saveBitmap(Bitmap bitmap) {
+    private String saveBitmap(final Bitmap bitmap) {
+        mToast.setText("Saving palette...");
+        mToast.show();
         ContextWrapper cw = new ContextWrapper(mContext);
         // path to /data/data/Colornaut/app_data/imageDir
-        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
+        final File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
         // Create imageDir with unique name based on time
-        String timeStamp = new SimpleDateFormat("MMddyyyyHHmm").format(new Date());
-        String filename = "colornaut_image_" + timeStamp + ".jpg";
+        String timeStamp = new SimpleDateFormat("MMddyyyyHHmmss").format(new Date());
+        final String filename = "colornaut_image_" + timeStamp + ".jpg";
         colorPalette.setImageFileName(filename);
         File mypath = new File(directory,filename);
         FileOutputStream fos = null;
