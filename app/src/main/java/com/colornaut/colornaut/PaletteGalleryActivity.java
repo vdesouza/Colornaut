@@ -83,58 +83,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         listView.setAdapter(listAdapter);
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // only show options menu on portrait view
-        super.onCreateOptionsMenu(menu);
-        menu.add(Menu.NONE, MENU_RESET, Menu.NONE, "Remove all saved palettes");
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case MENU_RESET:
-                showResetDialog();
-                return true;
-            default:
-                return super.onOptionsItemSelected(item);
-        }
-    }
-
-    private void showResetDialog() {
-        AlertDialog.Builder alert = new AlertDialog.Builder(this);
-
-        alert.setTitle("Erase all palettes?");
-        alert.setMessage("This cannot be undone.");
-
-        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                colornautData = new ArrayList<ColorPalette>();
-                listAdapter.clear();
-            }
-        });
-
-        alert.setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-                // Canceled.
-            }
-        });
-
-        alert.show();
-    }
-
-    @Override
-    public void onBackPressed() {
-        Intent data = new Intent();
-
-        // Create intent to send back to main activity when back button is pressed.
-        data.putExtra("ColornautData", colornautData);
-
-        setResult(RESULT_OK, data);
-        finish();
-    }
-
     // CUSTOM LIST ADAPTER
     private class PGListAdapter extends BaseAdapter {
         public List<ColorPalette> paletteList = new ArrayList<>();

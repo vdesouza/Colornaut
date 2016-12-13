@@ -69,8 +69,6 @@ public class MainActivity extends AppCompatActivity {
     private final static String TAG = "COLORNAUT";
     private final static String FILENAME = "ColornautData.srl";
 
-    private static final int GO_TO_GALLERY = 0;
-
     // the main data structure that holds all saved color palettes taken
     private ArrayList<ColorPalette> colornautData;
 
@@ -150,17 +148,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        Log.i(TAG,"Entered onActivityResult()");
-        if (requestCode == GO_TO_GALLERY) {
-            if (resultCode == RESULT_OK) {
-                colornautData = (ArrayList<ColorPalette>) data.getSerializableExtra("colornautData");
-                save();
-            }
-        }
-    }
-
-    @Override
     public void onResume() {
         super.onResume();
         // get camera if available
@@ -199,7 +186,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.launch_gallery:
                 Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
                 intent.putExtra("colornautData", load());
-                startActivityForResult(intent, GO_TO_GALLERY);
+                startActivity(intent);
                 return true;
         }
         return false;
@@ -460,20 +447,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        }
-
-        // for testing loading and saving
-        ArrayList<ColorPalette> loadedPalettes = load();
-        Log.i(TAG, "Load complete: " + loadedPalettes.toString() + " Count: " + loadedPalettes.size());
-        for (ColorPalette loadedPalette: loadedPalettes) {
-            Log.i(TAG, "Palette Name: " + loadedPalette.getPaletteName());
-            for (int i = 0; i < loadedPalette.getPaletteSize() - 1; i++) {
-                ArrayList<Integer> swatch = loadedPalette.getSwatch(i);
-                Log.i(TAG, "Color" + i + ": " + swatch.get(0));
-                Log.i(TAG, "TitleColor" + i + ": " + swatch.get(1));
-                Log.i(TAG, "BodyColor" + i + ": " + swatch.get(2));
-                Log.i(TAG, "Population" + i + ": " + swatch.get(3));
-            }
         }
         closeEditPanel();
     }
