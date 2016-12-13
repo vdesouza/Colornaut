@@ -3,12 +3,14 @@ package com.colornaut.colornaut;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.graphics.Palette;
@@ -18,7 +20,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.GridView;
 import android.widget.ImageView;
@@ -55,8 +59,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         Intent intent = getIntent();
         ArrayList<ColorPalette> colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
         Log.i(TAG, "loaded");
-
-
 
         getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.DKGRAY));
         getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -108,6 +110,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             private TextView paletteRgbValuesTextView;
             private TextView paletteHexValuesTextView;
             private GridView paletteColorsGridView;
+            private Button sharePaletteButton;
         }
 
         @Override
@@ -130,6 +133,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
                 holder.paletteRgbValuesTextView = (TextView) itemLayout.findViewById(R.id.paletteRgbValues);
                 holder.paletteHexValuesTextView = (TextView) itemLayout.findViewById(R.id.paletteHexValues);
                 holder.paletteColorsGridView = (GridView) itemLayout.findViewById(R.id.paletteListItemGridView);
+                holder.sharePaletteButton = (Button) itemLayout.findViewById(R.id.shareButton);
                 itemLayout.setTag(holder);
             }
             else {
@@ -170,12 +174,21 @@ public class PaletteGalleryActivity extends AppCompatActivity {
                     return true;
                 }
             });
+
             // set up gridview (same gridview used in the edit panel)
             int savedCount = colorPalette.getSavedNumber();
             ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, savedCount));
             ColorPreviewsGridAdapter mAdapter = new ColorPreviewsGridAdapter(mContext, rgbValues);
             holder.paletteColorsGridView.setColumnWidth((int)(parent.getWidth() - 23.8) / mAdapter.getCount());
             holder.paletteColorsGridView.setAdapter(mAdapter);
+
+            // set up share button
+            holder.sharePaletteButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Toast.makeText(mContext, "Testing..." + colorPalette.getPaletteName(), Toast.LENGTH_SHORT).show();
+                }
+            });
 
             return itemLayout;
         }

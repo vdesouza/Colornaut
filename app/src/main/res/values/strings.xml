@@ -6,4 +6,5 @@
     <string name="rgb_values_header">RGB Values:</string>
     <string name="hex_values_header">HEX Values:</string>
     <string name="copy_instructions">Long press to copy values</string>
+    <string name="share">Share Palette</string>
 </resources>
