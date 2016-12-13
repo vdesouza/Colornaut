@@ -7,7 +7,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
@@ -17,32 +16,27 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
-import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.graphics.drawable.ColorDrawable;
-import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
 import android.hardware.Camera;
 import android.location.Location;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.ActionBar;
 import android.text.InputType;
 import android.util.Log;
 import android.view.Menu;
@@ -65,7 +59,6 @@ import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -197,7 +190,7 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.launch_gallery:
                 Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
-                intent.putExtra("list", load());
+                intent.putExtra("colornautData", load());
                 startActivity(intent);
                 return true;
         }
@@ -317,8 +310,6 @@ public class MainActivity extends AppCompatActivity {
                 ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, progress));
                 mAdapter = new ColorPreviewsGridAdapter(MainActivity.this, rgbValues);
                 mAdapter.notifyDataSetChanged();
-                mPaletteGridView.setColumnWidth((int)(editPanelLinearLayout.getWidth() - 3.8) / mAdapter.getCount());
-                mPaletteGridView.setAdapter(mAdapter);
             }
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
@@ -362,6 +353,9 @@ public class MainActivity extends AppCompatActivity {
                 if (!inputPaletteName.getText().toString().isEmpty()) {
                     colorPalette.setPaletteName(inputPaletteName.getText().toString());
                 }
+                // save addition info to colorPalette then save to memory
+                colorPalette.setImagePath(saveBitmap(mBitmapTaken));
+                colorPalette.setSavedNumber(seekbarWithIntervals.getProgress() + 2);
                 colornautData.add(colorPalette);
                 save();
             }
@@ -458,6 +452,34 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         closeEditPanel();
+    }
+
+    // save bitmap taken to device storage and return the file path
+    // adapted from http://stackoverflow.com/a/17674787
+    private String saveBitmap(Bitmap bitmap) {
+        ContextWrapper cw = new ContextWrapper(mContext);
+        // path to /data/data/Colornaut/app_data/imageDir
+        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
+        // Create imageDir with unique name based on time
+        String timeStamp = new SimpleDateFormat("MMddyyyyHHmm").format(new Date());
+        String filename = "colornaut_image_" + timeStamp + ".jpg";
+        colorPalette.setImageFileName(filename);
+        File mypath = new File(directory,filename);
+        FileOutputStream fos = null;
+        try {
+            fos = new FileOutputStream(mypath);
+            // Use the compress method on the BitMap object to write image to the OutputStream
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                fos.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return directory.getAbsolutePath();
     }
 
     // loads saved palettes from device storage

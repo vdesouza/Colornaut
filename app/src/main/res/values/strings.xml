@@ -3,4 +3,7 @@
     <string name="edit_panel_title">Select number of colors and palette settings</string>
     <string name="edit_panel_cancel_button">Cancel</string>
     <string name="menu_item_palette_gallery">Palette Gallery</string>
+    <string name="rgb_values_header">RGB Values:</string>
+    <string name="hex_values_header">HEX Values:</string>
+    <string name="copy_instructions">Long press to copy values</string>
 </resources>

@@ -1,7 +1,14 @@
 package com.colornaut.colornaut;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.graphics.Palette;
@@ -9,11 +16,17 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.BaseAdapter;
+import android.widget.CheckBox;
+import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,8 +44,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
     PGListAdapter listAdapter;
 
     private final static String TAG = "COLORNAUT:gallery";
-    private static final String PREFS_KEY = "ColornautData";
-    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,26 +52,29 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         mContext = getApplicationContext();
 
         Log.i(TAG, "loading");
-
-        ArrayList<ColorPalette> list = load();
-
+        Intent intent = getIntent();
+        ArrayList<ColorPalette> colornautData = (ArrayList<ColorPalette>) intent.getSerializableExtra("colornautData");
         Log.i(TAG, "loaded");
 
-        prefs = this.getSharedPreferences("pref", Context.MODE_PRIVATE);
 
+
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(Color.DKGRAY));
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
+        getSupportActionBar().setDisplayShowTitleEnabled(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            Window window = getWindow();
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.GRAY);
+        }
 
         // Sets listview for palette gallery
         ListView listView = (ListView) findViewById(R.id.listView);
-        listAdapter = new PGListAdapter(mContext, list);
+        listAdapter = new PGListAdapter(mContext, colornautData);
         listView.setAdapter(listAdapter);
-
-        for (ColorPalette p : list) {
-            listAdapter.add(p);
-        }
     }
 
     // CUSTOM LIST ADAPTER
-    public class PGListAdapter extends BaseAdapter {
+    private class PGListAdapter extends BaseAdapter {
         public List<ColorPalette> paletteList = new ArrayList<>();
         public LayoutInflater mInflater;
         public Context mContext;
@@ -71,12 +85,6 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             this.paletteList = items;
             mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
-
-        public void add(ColorPalette palette) {
-            paletteList.add(palette);
-            notifyDataSetChanged();
-        }
-
 
         @Override
         public int getCount() {
@@ -93,139 +101,83 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             return 0; //Possibly unnecessary
         }
 
+        class ViewHolder {
+            private ImageView originalImageImageView;
+            private TextView paletteNameTextView;
+            private TextView paletteLocationTextView;
+            private TextView paletteRgbValuesTextView;
+            private TextView paletteHexValuesTextView;
+            private GridView paletteColorsGridView;
+        }
+
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
+        public View getView(int position, View convertView, ViewGroup parent) {
 
             Log.i(TAG, "Testing adapter");
 
-            ColorPalette colorPalette = paletteList.get(i);
-           // ArrayList<Integer> swatches = colorPalette.getSwatchesRgb();
+            final ColorPalette colorPalette = paletteList.get(position);
 
-            RelativeLayout relativeLayout = (RelativeLayout) LayoutInflater.from(mContext).inflate(R.layout.palette_list_items, viewGroup, false);
+            LinearLayout itemLayout = (LinearLayout) convertView;
+            final ViewHolder holder;
 
-            TextView nameTextView = (TextView) relativeLayout.findViewById(R.id.nameTextView);
-            TextView locationTextView = (TextView) relativeLayout.findViewById(R.id.locationTextView);
-            ImageView originalImageView = (ImageView) relativeLayout.findViewById(R.id.originalImage);
-            ImageView paletteView1 = (ImageView) relativeLayout.findViewById(R.id.paletteView1);
-            ImageView paletteView2 = (ImageView) relativeLayout.findViewById(R.id.paletteView2);
-            ImageView paletteView3 = (ImageView) relativeLayout.findViewById(R.id.paletteView3);
-            ImageView paletteView4 = (ImageView) relativeLayout.findViewById(R.id.paletteView4);
-            ImageView paletteView5 = (ImageView) relativeLayout.findViewById(R.id.paletteView5);
-            ImageView paletteView6 = (ImageView) relativeLayout.findViewById(R.id.paletteView6);
-            ImageView paletteView7 = (ImageView) relativeLayout.findViewById(R.id.paletteView7);
-            TextView paletteText1 = (TextView) relativeLayout.findViewById(R.id.paletteText1);
-            TextView paletteText2 = (TextView) relativeLayout.findViewById(R.id.paletteText2);
-            TextView paletteText3 = (TextView) relativeLayout.findViewById(R.id.paletteText3);
-            TextView paletteText4 = (TextView) relativeLayout.findViewById(R.id.paletteText4);
-            TextView paletteText5 = (TextView) relativeLayout.findViewById(R.id.paletteText5);
-            TextView paletteText6 = (TextView) relativeLayout.findViewById(R.id.paletteText6);
-            TextView paletteText7 = (TextView) relativeLayout.findViewById(R.id.paletteText7);
-
-//            nameTextView.setText(colorPalette.getPaletteName());
-//            locationTextView.setText(colorPalette.getLocation());
-//            originalImageView.setImageBitmap(colorPalette.getImage());
-//            paletteView1.setBackgroundColor(swatches.get(1));
-//            paletteView2.setBackgroundColor(swatches.get(2));
-//            paletteView3.setBackgroundColor(swatches.get(3));
-//            paletteView4.setBackgroundColor(swatches.get(4));
-//            paletteView5.setBackgroundColor(swatches.get(5));
-//            paletteView6.setBackgroundColor(swatches.get(6));
-//            paletteView7.setBackgroundColor(swatches.get(7));
-//            paletteText1.setText(swatches.get(1).toString());
-//            paletteText2.setText(swatches.get(2).toString());
-//            paletteText3.setText(swatches.get(3).toString());
-//            paletteText4.setText(swatches.get(4).toString());
-//            paletteText5.setText(swatches.get(5).toString());
-//            paletteText6.setText(swatches.get(6).toString());
-//            paletteText7.setText(swatches.get(7).toString());
-
-            return relativeLayout;
-        }
-    }
-
-
-    private ArrayList<ColorPalette> load() {
-        ArrayList<ColorPalette> listOfSavedPalettes = new ArrayList<ColorPalette>();
-
-        BufferedReader reader = null;
-        try {
-
-            Set<String> paletteSet = prefs.getStringSet(PREFS_KEY, new HashSet<String>());
-            Log.i(TAG, "here: " + paletteSet);
-            for (String s : paletteSet) {
-                reader = new BufferedReader(new StringReader(s));
-
-                Log.i(TAG, "String: " + s);
-
-                String name;
-                //String bitmap;
-                String location;
-                String color;
-                String population;
-                String empty = "";
-
-                while (null != (name = reader.readLine())) {
-                    //bitmap = reader.readLine();
-                    location = reader.readLine();
-                    Log.i(TAG, "Loading: Name = "+name);
-                    Log.i(TAG, "Loading: Location = "+location);
-                    List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
-                    while (!empty.equals(color = reader.readLine())) {
-                        if (color.equals("swatches:")) {
-                            color = reader.readLine();
-                        }
-                        Log.i(TAG, "Loading: Color = "+color);
-                        population = reader.readLine();
-                        Log.i(TAG, "Loading: Population = "+population);
-                        if (!color.equals("") && !population.equals("")) {
-                            Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
-                            swatchList.add(ps);
-                        }
-                    }
-                    //ColorPalette cp = new ColorPalette(name, location, swatchList);
-                    //listOfSavedPalettes.add(cp);
-                }
-
+            if (itemLayout == null) {
+                itemLayout = (LinearLayout) LayoutInflater.from(mContext).inflate(
+                        R.layout.palette_list_items, parent, false);
+                holder = new ViewHolder();
+                holder.originalImageImageView = (ImageView) itemLayout.findViewById(R.id.originalImage);
+                holder.paletteNameTextView = (TextView) itemLayout.findViewById(R.id.paletteName);
+                holder.paletteLocationTextView = (TextView) itemLayout.findViewById(R.id.paletteLocation);
+                holder.paletteRgbValuesTextView = (TextView) itemLayout.findViewById(R.id.paletteRgbValues);
+                holder.paletteHexValuesTextView = (TextView) itemLayout.findViewById(R.id.paletteHexValues);
+                holder.paletteColorsGridView = (GridView) itemLayout.findViewById(R.id.paletteListItemGridView);
+                itemLayout.setTag(holder);
             }
-//            FileInputStream fis = openFileInput(FILE_NAME);
-//            reader = new BufferedReader(new InputStreamReader(fis));
-//
-//            String name;
-//            String bitmap;
-//            String location;
-//            String color;
-//            String population;
-//            String empty = "";
-//
-//            while (null != (name = reader.readLine())) {
-//                bitmap = reader.readLine();
-//                location = reader.readLine();
-//                Log.i(TAG, "Loading: Name = "+name);
-//                Log.i(TAG, "Loading: Location = "+location);
-//                List<Palette.Swatch> swatchList = new ArrayList<Palette.Swatch>();
-//                while (!empty.equals(reader.readLine())) {
-//                    color = reader.readLine();
-//                    Log.i(TAG, "Loading: Color = "+color);
-//                    population = reader.readLine();
-//                    Log.i(TAG, "Loading: Population = "+population);
-//                    Palette.Swatch ps = new Palette.Swatch(Integer.valueOf(color), Integer.valueOf(population));
-//                    swatchList.add(ps);
-//                }
-//                ColorPalette cp = new ColorPalette(name, bitmap, location, swatchList);
-//                listOfSavedPalettes.add(cp);
-//            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (null != reader) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            else {
+                itemLayout = (LinearLayout) convertView;
+                holder = (ViewHolder) itemLayout.getTag();
             }
 
+            // set up list item content
+            itemLayout.setBackgroundColor(Color.parseColor("#F8F8F8"));
+            // set up bitmap image
+            Bitmap image = colorPalette.loadImageFromStorage();
+            holder.originalImageImageView.setImageBitmap(image);
+            // set up palette name, location, rgb values, hex values
+            holder.paletteNameTextView.setText(colorPalette.getPaletteName());
+            holder.paletteLocationTextView.setText(colorPalette.getLocation());
+            holder.paletteLocationTextView.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_location, 0, 0, 0);
+            holder.paletteRgbValuesTextView.setText(colorPalette.makeRgbString());
+            // listener for long click to copy values to clipboard
+            holder.paletteRgbValuesTextView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("RGB Values", holder.paletteRgbValuesTextView.getText());
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(mContext, "Copied RGB Values to clipboard.", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
+            holder.paletteHexValuesTextView.setText(colorPalette.makeHexString());
+            // listener for long click to copy values to clipboard
+            holder.paletteHexValuesTextView.setOnLongClickListener(new View.OnLongClickListener() {
+                @Override
+                public boolean onLongClick(View v) {
+                    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                    ClipData clip = ClipData.newPlainText("HEX Values", holder.paletteHexValuesTextView.getText());
+                    clipboard.setPrimaryClip(clip);
+                    Toast.makeText(mContext, "Copied HEX Values to clipboard.", Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+            });
+            // set up gridview (same gridview used in the edit panel)
+            int savedCount = colorPalette.getSavedNumber();
+            ArrayList<Integer> rgbValues = new ArrayList<Integer>(colorPalette.getAllRgbValues().subList(0, savedCount));
+            ColorPreviewsGridAdapter mAdapter = new ColorPreviewsGridAdapter(mContext, rgbValues);
+            holder.paletteColorsGridView.setColumnWidth((int)(parent.getWidth() - 23.8) / mAdapter.getCount());
+            holder.paletteColorsGridView.setAdapter(mAdapter);
+
+            return itemLayout;
         }
-        return listOfSavedPalettes;
     }
 }

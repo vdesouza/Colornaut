@@ -2,6 +2,7 @@ package com.colornaut.colornaut;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
@@ -17,13 +18,13 @@ import java.util.ArrayList;
 
 public class ColorPreviewsGridAdapter extends BaseAdapter {
 
-    private Activity mContext;
+    private Context mContext;
 
     // color values
     public ArrayList<Integer> mColors;
 
     // Constructor
-    public ColorPreviewsGridAdapter(MainActivity mainActivity, ArrayList<Integer> items) {
+    public ColorPreviewsGridAdapter(Context mainActivity, ArrayList<Integer> items) {
         this.mContext = mainActivity;
         this.mColors = items;
     }
