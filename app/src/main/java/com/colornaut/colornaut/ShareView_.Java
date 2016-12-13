@@ -26,7 +26,7 @@ import java.util.UUID;
  * Created by Moira on 12/6/2016.
  */
 
-public class ShareView extends View {
+public class ShareView_ extends View {
 
     private ColorPalette palette;
     private Dialog checks, shareTo;
@@ -35,7 +35,7 @@ public class ShareView extends View {
     private Canvas canvas;
 
 
-    public ShareView(Context context, ColorPalette palette) {
+    public ShareView_(Context context, ColorPalette palette) {
         super(context);
         this.context = context;
         this.palette = palette;

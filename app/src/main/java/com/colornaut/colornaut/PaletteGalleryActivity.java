@@ -1,44 +1,43 @@
 package com.colornaut.colornaut;
 
+import android.app.Dialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.ContentValues;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.net.Uri;
 import android.os.Build;
-import android.support.v7.app.AlertDialog;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v7.graphics.Palette;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
+import android.widget.MediaController;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.UUID;
 
 public class PaletteGalleryActivity extends AppCompatActivity {
     // Views for this class
@@ -71,7 +70,7 @@ public class PaletteGalleryActivity extends AppCompatActivity {
 
         // Sets listview for palette gallery
         ListView listView = (ListView) findViewById(R.id.listView);
-        listAdapter = new PGListAdapter(mContext, colornautData);
+        listAdapter = new PGListAdapter(mContext, listView, colornautData);
         listView.setAdapter(listAdapter);
     }
 
@@ -80,11 +79,13 @@ public class PaletteGalleryActivity extends AppCompatActivity {
         public List<ColorPalette> paletteList = new ArrayList<>();
         public LayoutInflater mInflater;
         public Context mContext;
+        public ListView listView;
 
         //Constructor
-        PGListAdapter(Context context, ArrayList<ColorPalette> items) {
+        PGListAdapter(Context context, ListView listView, ArrayList<ColorPalette> items) {
             this.mContext = context;
             this.paletteList = items;
+            this.listView = listView;
             mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
@@ -186,11 +187,117 @@ public class PaletteGalleryActivity extends AppCompatActivity {
             holder.sharePaletteButton.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Toast.makeText(mContext, "Testing..." + colorPalette.getPaletteName(), Toast.LENGTH_SHORT).show();
+
+                    makeShareDialog(colorPalette.loadImageFromStorage());
+
                 }
             });
 
             return itemLayout;
         }
+
+        private void makeShareDialog(Bitmap orig) {
+
+            final Bitmap image = Bitmap.createBitmap(orig.getWidth()  * 2, (int) (orig.getHeight() * 1.33), Bitmap.Config.ARGB_8888);
+
+            final Dialog dialog = new Dialog(PaletteGalleryActivity.this);
+            dialog.setContentView(R.layout.select_share);
+            dialog.setTitle("Share Palette");
+
+            final Dialog shareTo = new Dialog(PaletteGalleryActivity.this);
+            shareTo.setContentView(R.layout.share_to);
+
+            Button confirm = (Button) dialog.findViewById(R.id.share_info);
+            confirm.setOnClickListener(new View.OnClickListener() {
+                public void onClick(View view) {
+                    dialog.dismiss();
+                    ImageButton fb = (ImageButton) shareTo.findViewById(R.id.fb_btn);
+                    fb.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            share("com.facebook.katana", image);
+                            shareTo.dismiss();
+                            Toast.makeText(mContext, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    ImageButton twit = (ImageButton) shareTo.findViewById(R.id.twitter_btn);
+                    twit.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            share("com.twitter.android", image);
+                            shareTo.dismiss();
+                            Toast.makeText(mContext, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    ImageButton ig = (ImageButton) shareTo.findViewById(R.id.instagram_btn);
+                    ig.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            share("com.instagram.android", image);
+                            shareTo.dismiss();
+                            Toast.makeText(mContext, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    ImageButton pin = (ImageButton) shareTo.findViewById(R.id.pinterest_btn);
+                    pin.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            share("com.pinterest", image);
+                            shareTo.dismiss();
+                            Toast.makeText(mContext, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    ImageButton sav = (ImageButton) shareTo.findViewById(R.id.save_btn);
+                    sav.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            save(image);
+                            shareTo.dismiss();
+                            Toast.makeText(mContext, "Image Shared! :)", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                    shareTo.show();
+                }
+            });
+            dialog.show();
+        }
+
+        private void share(String application, Bitmap image) {
+            Intent intent = mContext.getPackageManager().getLaunchIntentForPackage(application);
+            if (intent != null) {
+                String pathOfBmp = MediaStore.Images.Media.insertImage(mContext.getContentResolver(), image,"title", null);
+                Uri bmpUri = Uri.parse(pathOfBmp);
+                // The application exists
+                Intent shareIntent = new Intent();
+                shareIntent.setAction(Intent.ACTION_SEND);
+                shareIntent.setPackage(application);
+                shareIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                shareIntent.putExtra(Intent.EXTRA_STREAM, bmpUri);
+                shareIntent.setType("image/png");
+                // Start the specific social application
+                mContext.startActivity(shareIntent);
+            }
+        }
+
+        public void save(Bitmap input) {
+            String fName = UUID.randomUUID().toString() + ".png";
+            File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), fName);
+            try {
+                boolean compressSucceeded = input.compress(Bitmap.CompressFormat.PNG, 100, new FileOutputStream(file));
+                addImageToGallery(file.getAbsolutePath(), mContext);
+                Toast.makeText(mContext, "Saved to " + file.getAbsolutePath(), Toast.LENGTH_SHORT).show();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void addImageToGallery(final String filePath, final Context context) {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Images.Media.DATE_TAKEN, System.currentTimeMillis());
+            values.put(MediaStore.Images.Media.MIME_TYPE, "image/png");
+            values.put(MediaStore.MediaColumns.DATA, filePath);
+            context.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        }
+
     }
 }
