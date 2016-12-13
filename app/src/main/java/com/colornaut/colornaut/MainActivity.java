@@ -69,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
     private final static String TAG = "COLORNAUT";
     private final static String FILENAME = "ColornautData.srl";
 
+    private static final int GO_TO_GALLERY = 0;
+
     // the main data structure that holds all saved color palettes taken
     private ArrayList<ColorPalette> colornautData;
 
@@ -145,16 +147,17 @@ public class MainActivity extends AppCompatActivity {
                 mCaptureButton.startAnimation(shutterCloseAnim);
             }
         });
+    }
 
-//        mShareButton = (Button) findViewById(R.id.buttonShare);
-//        mShareButton.setOnClickListener(new OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                // shareView = new ShareView(mContext, null);
-//                //mLayoutPreview.addView(shareView);
-//            }
-//        });
-
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        Log.i(TAG,"Entered onActivityResult()");
+        if (requestCode == GO_TO_GALLERY) {
+            if (resultCode == RESULT_OK) {
+                colornautData = (ArrayList<ColorPalette>) data.getSerializableExtra("colornautData");
+                save();
+            }
+        }
     }
 
     @Override
@@ -196,7 +199,7 @@ public class MainActivity extends AppCompatActivity {
             case R.id.launch_gallery:
                 Intent intent = new Intent(MainActivity.this, PaletteGalleryActivity.class);
                 intent.putExtra("colornautData", load());
-                startActivity(intent);
+                startActivityForResult(intent, GO_TO_GALLERY);
                 return true;
         }
         return false;

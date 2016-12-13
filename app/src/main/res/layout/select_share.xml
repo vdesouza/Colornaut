@@ -1,6 +1,5 @@
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
     android:weightSum="1"
@@ -14,47 +13,84 @@
         android:layout_height="wrap_content"
         android:elevation="1dp"
         android:id="@+id/share_desc"
-        tools:textSize="18sp" />
+        android:textSize="16sp"
+        android:paddingLeft="24dp"
+        />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:background="#333333"/>
 
     <CheckBox
         android:text="Image"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/img" />
+        android:id="@+id/img"
+        android:textSize="16sp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <CheckBox
         android:text="Title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/name" />
+        android:id="@+id/name"
+        android:textSize="16sp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <CheckBox
         android:text="RGB Values"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/rgb" />
+        android:id="@+id/rgb"
+        android:textSize="16sp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <CheckBox
         android:text="Hex Values"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/hex" />
+        android:id="@+id/hex"
+        android:textSize="16sp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <CheckBox
         android:text="Timestamp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/time" />
+        android:id="@+id/time"
+        android:textSize="16sp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <CheckBox
-android:text="Location"
-android:layout_width="match_parent"
-android:layout_height="wrap_content"
-android:id="@+id/loc" />
+        android:text="Location"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/loc"
+        android:textSize="16sp"
+        android:paddingBottom="5dp"
+        android:layout_marginLeft="24dp"/>
 
     <Button
         android:text="Share"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/share_info" />
+        android:id="@+id/share_info"
+        android:textColor="#ffffff"
+        android:background="#333333"
+        android:paddingBottom="25dp"
+        android:paddingTop="25dp"
+        android:layout_marginBottom="24dp"
+        android:layout_marginLeft="24dp"
+        android:layout_marginRight="24dp"
+        android:layout_marginTop="10dp"
+        android:layout_gravity="center"/>
 </LinearLayout>
